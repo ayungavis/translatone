@@ -8,6 +8,7 @@ export type ProviderErrorReason =
   | "network"
   | "timeout"
   | "bad_response"
+  | "model_unavailable"
   | "request_rejected";
 
 const RECOVERABLE_REASONS: ReadonlySet<ProviderErrorReason> = new Set([
@@ -16,6 +17,7 @@ const RECOVERABLE_REASONS: ReadonlySet<ProviderErrorReason> = new Set([
   "server",
   "network",
   "timeout",
+  "model_unavailable",
 ]);
 
 const REASON_LABELS: Readonly<Record<ProviderErrorReason, string>> = {
@@ -26,6 +28,7 @@ const REASON_LABELS: Readonly<Record<ProviderErrorReason, string>> = {
   network: "unreachable",
   timeout: "timed out",
   bad_response: "unexpected response",
+  model_unavailable: "model unavailable",
   request_rejected: "request rejected",
 };
 

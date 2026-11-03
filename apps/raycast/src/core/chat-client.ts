@@ -132,6 +132,9 @@ function reasonForStatus(status: number): ProviderErrorReason {
   if (status === 401 || status === 403) {
     return "unauthorized";
   }
+  if (status === 404) {
+    return "model_unavailable";
+  }
   if (status === 429) {
     return "rate_limited";
   }

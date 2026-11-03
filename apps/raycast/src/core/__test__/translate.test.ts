@@ -77,6 +77,23 @@ describe("translate", () => {
     expect(calls.map((call) => call.url)).toEqual(["https://gemini.test/v1/chat/completions"]);
   });
 
+  test("falls back when the first provider no longer offers the model", async () => {
+    const { deps } = dependencies(
+      new Map([
+        [
+          "groq.test",
+          async () => Response.json({ error: { message: "no model" } }, { status: 404 }),
+        ],
+        ["gemini.test", async () => completionResponse("Hello")],
+      ]),
+    );
+
+    const result = await translate(request, deps);
+
+    expect(result.provider).toBe(gemini);
+    expect(result.skipped.map((failure) => failure.summary)).toEqual(["Groq: model unavailable"]);
+  });
+
   test("stops on a non-recoverable error instead of hiding it", async () => {
     const { deps, calls } = dependencies(
       new Map([

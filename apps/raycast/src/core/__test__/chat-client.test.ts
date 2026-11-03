@@ -67,6 +67,7 @@ describe("requestCompletion", () => {
     [403, "unauthorized", false],
     [429, "rate_limited", true],
     [503, "server", true],
+    [404, "model_unavailable", true],
     [400, "request_rejected", false],
   ] as const)("maps HTTP %i to %s", async (status, reason, recoverable) => {
     const { fetch } = respondWith(async () => new Response("provider says no", { status }));

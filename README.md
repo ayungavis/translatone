@@ -42,7 +42,7 @@ Regular translators give you one literal result. Real messages need different vo
 | Gemini   | Free | [aistudio.google.com](https://aistudio.google.com)  | Used when Groq is limited or down    |
 | Ollama   | Free | [ollama.com](https://ollama.com) (runs on your Mac) | Optional offline fallback, no limits |
 
-When a provider returns a rate limit, times out, or is unreachable, TranslaTone moves to the next one. Invalid keys and rejected requests are reported instead of hidden.
+When a provider returns a rate limit, no longer offers the configured model, times out, or is unreachable, TranslaTone moves to the next one and lists the skipped provider in the result. Invalid keys and rejected requests are reported instead of hidden.
 
 > Gemini's free tier may use submitted text to improve Google's products. Avoid sending sensitive content through it.
 

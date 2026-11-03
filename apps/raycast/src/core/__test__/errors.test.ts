@@ -17,6 +17,7 @@ describe("ProviderError", () => {
     ["timeout", true, "Groq: timed out"],
     ["unauthorized", false, "Groq: invalid API key"],
     ["bad_response", false, "Groq: unexpected response"],
+    ["model_unavailable", true, "Groq: model unavailable"],
     ["request_rejected", false, "Groq: request rejected"],
   ] satisfies [ProviderErrorReason, boolean, string][])(
     "%s is recoverable=%p with summary %p",
