@@ -1,7 +1,7 @@
 import { getPreferenceValues } from "@raycast/api";
-import { DEFAULT_LANGUAGE, findLanguage, type Language } from "../core/languages";
+import { DEFAULT_LANGUAGE, resolveLanguage, type Language } from "../core/languages";
 import { PROVIDERS, type ProviderConfig, type ProviderId } from "../core/providers";
-import { DEFAULT_TONE, isToneId, type ToneId } from "../core/tones";
+import { DEFAULT_TONE, resolveTone, type ToneId } from "../core/tones";
 
 interface RawPreferences {
   readonly groqApiKey?: string;
@@ -23,11 +23,10 @@ export interface Settings {
 
 export function loadSettings(): Settings {
   const preferences = getPreferenceValues<RawPreferences>();
-  const tone = preferences.defaultTone ?? "";
   return {
     providers: resolveProviders(preferences),
-    defaultTone: isToneId(tone) ? tone : DEFAULT_TONE,
-    defaultLanguage: findLanguage(preferences.defaultTargetLanguage ?? "") ?? DEFAULT_LANGUAGE,
+    defaultTone: resolveTone(preferences.defaultTone, DEFAULT_TONE),
+    defaultLanguage: resolveLanguage(preferences.defaultTargetLanguage, DEFAULT_LANGUAGE),
   };
 }
 

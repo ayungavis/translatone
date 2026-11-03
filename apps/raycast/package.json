@@ -14,7 +14,7 @@
     "lint": "ray lint",
     "fix-lint": "ray lint --fix",
     "typecheck": "tsc --noEmit",
-    "test": "bun test",
+    "test": "bun test && bun scripts/check-coverage.ts",
     "publish": "npx @raycast/api@latest publish"
   },
   "dependencies": {

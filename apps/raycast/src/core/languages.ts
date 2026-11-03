@@ -27,6 +27,6 @@ export const LANGUAGES = [
 
 export const DEFAULT_LANGUAGE: Language = LANGUAGES[0];
 
-export function findLanguage(code: string): Language | undefined {
-  return LANGUAGES.find((language) => language.code === code);
+export function resolveLanguage(code: string | undefined, fallback: Language): Language {
+  return LANGUAGES.find((language) => language.code === code) ?? fallback;
 }

@@ -6,15 +6,15 @@ import {
   openExtensionPreferences,
   useNavigation,
 } from "@raycast/api";
-import { FormValidation, useForm } from "@raycast/utils";
+import { FormValidation, useForm, usePromise } from "@raycast/utils";
 import { useMemo } from "react";
-import { findLanguage, LANGUAGES } from "./core/languages";
-import { PROVIDERS } from "./core/providers";
-import { isToneId, TONE_IDS, TONES } from "./core/tones";
-import { formatUsage } from "./core/usage";
+import { LANGUAGES, resolveLanguage } from "./core/languages";
+import type { ProviderConfig } from "./core/providers";
+import { resolveTone, TONE_IDS, TONES } from "./core/tones";
+import { loadProviderUsage, summarizeProviderUsage } from "./core/usage";
 import { loadSettings, type Settings } from "./raycast/settings";
+import { localStore } from "./raycast/storage";
 import { TranslationDetail } from "./raycast/translation-detail";
-import { useProviderUsage, type ProviderUsage } from "./raycast/use-provider-usage";
 
 interface TranslateFormValues {
   text: string;
@@ -25,7 +25,10 @@ interface TranslateFormValues {
 export default function TranslateCommand() {
   const settings = useMemo(() => loadSettings(), []);
   const { push } = useNavigation();
-  const { data: providerUsage, isLoading } = useProviderUsage(settings.providers);
+  const { data: providerUsage, isLoading } = usePromise(
+    (providers: readonly ProviderConfig[]) => loadProviderUsage(localStore, providers, new Date()),
+    [settings.providers],
+  );
 
   const { handleSubmit, itemProps } = useForm<TranslateFormValues>({
     initialValues: {
@@ -67,7 +70,10 @@ export default function TranslateCommand() {
         ))}
       </Form.Dropdown>
       <Form.Separator />
-      <Form.Description title="Providers" text={describeProviders(providerUsage)} />
+      <Form.Description
+        title="Providers"
+        text={providerUsage ? summarizeProviderUsage(providerUsage) : "Loading…"}
+      />
     </Form>
   );
 }
@@ -77,21 +83,9 @@ function createTranslationView(values: TranslateFormValues, settings: Settings) 
     <TranslationDetail
       command="translate"
       text={values.text}
-      tone={isToneId(values.tone) ? values.tone : settings.defaultTone}
-      language={findLanguage(values.language) ?? settings.defaultLanguage}
+      tone={resolveTone(values.tone, settings.defaultTone)}
+      language={resolveLanguage(values.language, settings.defaultLanguage)}
       providers={settings.providers}
     />
   );
-}
-
-function describeProviders(providerUsage: readonly ProviderUsage[] | undefined): string {
-  if (providerUsage === undefined) {
-    return "Loading…";
-  }
-  if (providerUsage.length === 0) {
-    return "No provider configured. Add an API key in the extension preferences.";
-  }
-  return providerUsage
-    .map(({ provider, usage }) => `${PROVIDERS[provider.id].name}: ${formatUsage(usage)}`)
-    .join("\n");
 }

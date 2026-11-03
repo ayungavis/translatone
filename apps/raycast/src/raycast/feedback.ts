@@ -31,8 +31,10 @@ function openPreferencesAction(): Toast.ActionOptions {
 function copyDebugInfoAction(report: string): Toast.ActionOptions {
   return {
     title: "Copy Debug Info",
-    onAction: (toast) => {
-      void Clipboard.copy(report).then(() => toast.hide());
+    onAction: () => {
+      void Clipboard.copy(report).then(() =>
+        showToast({ style: Toast.Style.Success, title: "Debug info copied" }),
+      );
     },
   };
 }

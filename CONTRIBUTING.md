@@ -11,7 +11,7 @@ Thanks for helping improve TranslaTone.
 ## Guidelines
 
 - Keep translation logic in `apps/raycast/src/core` free of `@raycast/api` imports so it stays unit-testable.
-- Add or update tests in `*.test.ts` next to the code you change.
+- Add or update tests in the `__test__` folder beside the code you change (for example `src/core/__test__/translate.test.ts`).
 - Prefer clear names and small functions over comments.
 - Do not log or include API keys in errors, debug reports, or tests.
 - Use `bun` for dependencies. Do not commit `package-lock.json`; the release workflow generates it for the Raycast Store.

@@ -1,6 +1,6 @@
-import type { Fetch } from "./chat-client";
-import type { ProviderConfig, ProviderId } from "./providers";
-import type { KeyValueStore } from "./usage";
+import type { Fetch } from "../chat-client";
+import type { ProviderConfig, ProviderId } from "../providers";
+import type { KeyValueStore } from "../usage";
 
 export class MemoryStore implements KeyValueStore {
   readonly entries = new Map<string, string>();

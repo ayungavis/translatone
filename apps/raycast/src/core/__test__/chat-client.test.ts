@@ -1,9 +1,14 @@
 import { describe, expect, test } from "bun:test";
-import { requestCompletion } from "./chat-client";
-import { ProviderError } from "./errors";
+import { requestCompletion, type Fetch } from "../chat-client";
+import { ProviderError } from "../errors";
 import { completionResponse, providerConfig, rejectionOf, scriptedFetch } from "./test-helpers";
 
 const groq = providerConfig("groq");
+
+const hangingFetch: Fetch = (_url, init) =>
+  new Promise((_resolve, reject) => {
+    init.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+  });
 
 function respondWith(response: () => Promise<Response>) {
   return scriptedFetch(new Map([["groq.test", response]]));
@@ -85,6 +90,45 @@ describe("requestCompletion", () => {
 
     expect(error.reason).toBe("network");
     expect(error.recoverable).toBe(true);
+  });
+
+  test("reports a slow provider as a recoverable timeout", async () => {
+    const error = await captureError(
+      requestCompletion(
+        hangingFetch,
+        { provider: groq, systemPrompt: "system", text: "Hello" },
+        { timeoutMs: 5 },
+      ),
+    );
+
+    expect(error.reason).toBe("timeout");
+    expect(error.recoverable).toBe(true);
+    expect(error.message).toBe("No response after 5 ms.");
+  });
+
+  test("falls back to the HTTP status when the error body cannot be read", async () => {
+    const brokenBody = new ReadableStream({
+      start: (controller) => controller.error(new Error("stream broke")),
+    });
+    const { fetch } = respondWith(async () => new Response(brokenBody, { status: 502 }));
+
+    const error = await captureError(
+      requestCompletion(fetch, { provider: groq, systemPrompt: "system", text: "Hello" }),
+    );
+
+    expect(error.reason).toBe("server");
+    expect(error.message).toBe("HTTP 502");
+  });
+
+  test("rejects a response that is not JSON", async () => {
+    const { fetch } = respondWith(async () => new Response("<html>oops</html>"));
+
+    const error = await captureError(
+      requestCompletion(fetch, { provider: groq, systemPrompt: "system", text: "Hello" }),
+    );
+
+    expect(error.reason).toBe("bad_response");
+    expect(error.status).toBe(200);
   });
 
   test("rethrows when the caller aborts", async () => {

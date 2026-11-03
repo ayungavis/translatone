@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "scripts/**/*"],
   "compilerOptions": {
     "target": "es2023",
     "lib": ["es2023"],

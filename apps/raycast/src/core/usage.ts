@@ -13,6 +13,11 @@ export interface UsageSnapshot {
   readonly remaining: number | undefined;
 }
 
+export interface ProviderUsage {
+  readonly provider: ProviderConfig;
+  readonly usage: UsageSnapshot;
+}
+
 const PERIOD_LABELS: Readonly<Record<UsagePeriod, string>> = {
   day: "today",
   month: "this month",
@@ -54,6 +59,25 @@ export function formatUsage(usage: UsageSnapshot): string {
     return `${usage.used.toLocaleString("en-US")} ${period}`;
   }
   return `${usage.used.toLocaleString("en-US")} / ${usage.limit.toLocaleString("en-US")} ${period}`;
+}
+
+export function loadProviderUsage(
+  store: KeyValueStore,
+  providers: readonly ProviderConfig[],
+  now: Date,
+): Promise<ProviderUsage[]> {
+  return Promise.all(
+    providers.map(async (provider) => ({ provider, usage: await readUsage(store, provider, now) })),
+  );
+}
+
+export function summarizeProviderUsage(overview: readonly ProviderUsage[]): string {
+  if (overview.length === 0) {
+    return "No provider configured. Add an API key in the extension preferences.";
+  }
+  return overview
+    .map(({ provider, usage }) => `${PROVIDERS[provider.id].name}: ${formatUsage(usage)}`)
+    .join("\n");
 }
 
 function snapshot(provider: ProviderConfig, used: number): UsageSnapshot {

@@ -1,5 +1,6 @@
 node_modules/
 dist/
+coverage/
 .turbo/
 raycast-env.d.ts
 package-lock.json

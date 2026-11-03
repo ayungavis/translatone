@@ -41,6 +41,10 @@ export function isToneId(value: string): value is ToneId {
   return (TONE_IDS as readonly string[]).includes(value);
 }
 
+export function resolveTone(value: string | undefined, fallback: ToneId): ToneId {
+  return value !== undefined && isToneId(value) ? value : fallback;
+}
+
 export function buildSystemPrompt(tone: ToneId, targetLanguage: string): string {
   return [
     `You are a translator. Translate the user's text into ${targetLanguage}.`,

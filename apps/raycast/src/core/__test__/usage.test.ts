@@ -1,6 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { MemoryStore, providerConfig } from "./test-helpers";
-import { formatUsage, incrementUsage, readUsage, usageKey } from "./usage";
+import {
+  formatUsage,
+  incrementUsage,
+  loadProviderUsage,
+  readUsage,
+  summarizeProviderUsage,
+  usageKey,
+} from "../usage";
 
 const NOW = new Date("2026-11-03T10:00:00Z");
 
@@ -63,6 +70,43 @@ describe("usage counting", () => {
     await store.setItem(usageKey(provider, NOW), "not-a-number");
 
     expect((await readUsage(store, provider, NOW)).used).toBe(0);
+  });
+});
+
+describe("provider usage overview", () => {
+  test("loads usage for every configured provider in order", async () => {
+    const store = new MemoryStore();
+    const groq = providerConfig("groq");
+    const gemini = providerConfig("gemini");
+    await incrementUsage(store, gemini, NOW);
+
+    const overview = await loadProviderUsage(store, [groq, gemini], NOW);
+
+    expect(overview.map(({ provider, usage }) => [provider.id, usage.used])).toEqual([
+      ["groq", 0],
+      ["gemini", 1],
+    ]);
+  });
+
+  test("summarizes one line per provider", () => {
+    const summary = summarizeProviderUsage([
+      {
+        provider: providerConfig("groq"),
+        usage: { period: "day", used: 2, limit: 14_400, remaining: 14_398 },
+      },
+      {
+        provider: providerConfig("ollama"),
+        usage: { period: "day", used: 5, limit: undefined, remaining: undefined },
+      },
+    ]);
+
+    expect(summary).toBe("Groq: 2 / 14,400 today\nOllama: 5 today");
+  });
+
+  test("explains how to configure a provider when none is set", () => {
+    expect(summarizeProviderUsage([])).toBe(
+      "No provider configured. Add an API key in the extension preferences.",
+    );
   });
 });
 

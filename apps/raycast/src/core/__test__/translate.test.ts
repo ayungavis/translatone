@@ -1,11 +1,11 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, setSystemTime, test } from "bun:test";
 import {
   AllProvidersFailedError,
   EmptyTextError,
   NoProviderConfiguredError,
   ProviderError,
-} from "./errors";
-import { DEFAULT_LANGUAGE } from "./languages";
+} from "../errors";
+import { DEFAULT_LANGUAGE } from "../languages";
 import {
   completionResponse,
   MemoryStore,
@@ -13,8 +13,8 @@ import {
   rejectionOf,
   scriptedFetch,
 } from "./test-helpers";
-import { translate, type TranslationDependencies } from "./translate";
-import { usageKey } from "./usage";
+import { translate, type TranslationDependencies } from "../translate";
+import { usageKey } from "../usage";
 
 const NOW = new Date("2026-11-03T10:00:00Z");
 const groq = providerConfig("groq");
@@ -106,6 +106,20 @@ describe("translate", () => {
     expect(error).toMatchObject({
       message: "Groq: rate limit reached · Gemini: provider is down",
     });
+  });
+
+  test("counts usage against the current day when no clock is given", async () => {
+    const { deps, store } = dependencies(
+      new Map([["groq.test", async () => completionResponse("Hello")]]),
+    );
+    setSystemTime(NOW);
+    try {
+      await translate(request, { providers: deps.providers, store: deps.store, fetch: deps.fetch });
+    } finally {
+      setSystemTime();
+    }
+
+    expect(store.entries.get(usageKey(groq, NOW))).toBe("1");
   });
 
   test("requires at least one provider", async () => {
