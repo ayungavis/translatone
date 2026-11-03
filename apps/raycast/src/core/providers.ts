@@ -22,8 +22,8 @@ export const PROVIDERS: Readonly<Record<ProviderId, ProviderInfo>> = {
     id: "groq",
     name: "Groq",
     defaultBaseUrl: "https://api.groq.com/openai/v1",
-    defaultModel: "llama-3.1-8b-instant",
-    limit: { period: "day", maxRequests: 14_400 },
+    defaultModel: "openai/gpt-oss-20b",
+    limit: { period: "day", maxRequests: 1_000 },
   },
   gemini: {
     id: "gemini",

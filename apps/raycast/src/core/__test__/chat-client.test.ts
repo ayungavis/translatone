@@ -81,6 +81,19 @@ describe("requestCompletion", () => {
     expect(error.message).toBe("provider says no");
   });
 
+  test.each([
+    ["an OpenAI-style error object", { error: { message: "The model `x` does not exist." } }],
+    ["a Gemini-style error array", [{ error: { message: "The model `x` does not exist." } }]],
+  ])("uses the provider's message from %s", async (_label, body) => {
+    const { fetch } = respondWith(async () => Response.json(body, { status: 404 }));
+
+    const error = await captureError(
+      requestCompletion(fetch, { provider: groq, systemPrompt: "system", text: "Hello" }),
+    );
+
+    expect(error.message).toBe("The model `x` does not exist.");
+  });
+
   test("reports a network failure as recoverable", async () => {
     const { fetch } = respondWith(() => Promise.reject(new TypeError("fetch failed")));
 

@@ -102,13 +102,30 @@ async function toHttpError(
   response: Response,
   requestId: string | undefined,
 ): Promise<ProviderError> {
-  const detail = (await response.text().catch(() => "")).slice(0, MAX_ERROR_DETAIL_LENGTH);
+  const body = await response.text().catch(() => "");
+  const detail = (providerErrorMessage(body) ?? body.trim()).slice(0, MAX_ERROR_DETAIL_LENGTH);
   return new ProviderError(
     provider.id,
     reasonForStatus(response.status),
     detail || `HTTP ${response.status}`,
     { status: response.status, requestId },
   );
+}
+
+function providerErrorMessage(body: string): string | undefined {
+  const parsed = parseJson(body);
+  const payload: unknown = Array.isArray(parsed) ? parsed[0] : parsed;
+  const error = isRecord(payload) ? payload["error"] : undefined;
+  const message = isRecord(error) ? error["message"] : undefined;
+  return typeof message === "string" && message.trim() !== "" ? message.trim() : undefined;
+}
+
+function parseJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
 }
 
 function reasonForStatus(status: number): ProviderErrorReason {

@@ -64,7 +64,7 @@
       "description": "Model used for Groq requests.",
       "type": "textfield",
       "required": false,
-      "default": "llama-3.1-8b-instant"
+      "default": "openai/gpt-oss-20b"
     },
     {
       "name": "geminiApiKey",
