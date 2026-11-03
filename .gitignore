@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.turbo/
+raycast-env.d.ts
+package-lock.json
+*.log
+.DS_Store
+.env
+.env.*
+docs/

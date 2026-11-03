@@ -1,0 +1,41 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "import", "react", "promise", "node"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "warn"
+  },
+  "options": {
+    "typeAware": true
+  },
+  "env": {
+    "builtin": true,
+    "node": true
+  },
+  "rules": {
+    "eslint/eqeqeq": "error",
+    "eslint/no-console": ["error", { "allow": ["error", "warn", "debug"] }],
+    "eslint/no-param-reassign": "error",
+    "eslint/prefer-const": "error",
+    "typescript/consistent-type-imports": "error",
+    "typescript/no-explicit-any": "error",
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/no-non-null-assertion": "error",
+    "typescript/no-unnecessary-type-assertion": "error",
+    "typescript/switch-exhaustiveness-check": "error",
+    "import/no-cycle": "error",
+    "react/react-in-jsx-scope": "off",
+    "react/jsx-key": "error",
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "error"
+  },
+  "overrides": [
+    {
+      "files": ["apps/raycast/src/core/translate.ts"],
+      "rules": { "eslint/no-await-in-loop": "off" }
+    }
+  ],
+  "ignorePatterns": ["**/dist/**", "**/raycast-env.d.ts", "docs/**"]
+}

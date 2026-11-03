@@ -1,0 +1,84 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  EXTENSION_NAME: translatone
+  EXTENSION_PATH: apps/raycast
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  github-release:
+    name: GitHub release
+    runs-on: ubuntu-latest
+    needs: ci
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --title "$GITHUB_REF_NAME"
+
+  raycast-store:
+    name: Raycast Store pull request
+    runs-on: ubuntu-latest
+    needs: github-release
+    if: ${{ vars.RAYCAST_EXTENSIONS_FORK != '' }}
+    environment: raycast-store
+    env:
+      GH_TOKEN: ${{ secrets.RAYCAST_PUBLISH_TOKEN }}
+      FORK: ${{ vars.RAYCAST_EXTENSIONS_FORK }}
+      BRANCH: ${{ format('translatone-{0}', github.ref_name) }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Prepare a standalone copy with an npm lockfile
+        run: |
+          STAGE="$RUNNER_TEMP/extension"
+          mkdir -p "$STAGE"
+          cp -R "$EXTENSION_PATH/." "$STAGE"
+          cd "$STAGE"
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          echo "STAGE=$STAGE" >> "$GITHUB_ENV"
+
+      - name: Sync fork and push release branch
+        run: |
+          gh repo sync "$FORK" --branch main
+          git clone --depth 1 --filter=blob:none --sparse \
+            "https://x-access-token:${GH_TOKEN}@github.com/${FORK}.git" store
+          cd store
+          git sparse-checkout set "extensions/$EXTENSION_NAME"
+          git switch -c "$BRANCH"
+          rm -rf "extensions/$EXTENSION_NAME"
+          mkdir -p "extensions/$EXTENSION_NAME"
+          cp -R "$STAGE/." "extensions/$EXTENSION_NAME"
+          git add "extensions/$EXTENSION_NAME"
+          git -c user.name="$GITHUB_ACTOR" \
+              -c user.email="${GITHUB_ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com" \
+              commit -m "Update $EXTENSION_NAME extension ($GITHUB_REF_NAME)"
+          git push --force origin "$BRANCH"
+
+      - name: Open pull request to raycast/extensions
+        run: |
+          gh pr create \
+            --repo raycast/extensions \
+            --base main \
+            --head "${FORK%%/*}:$BRANCH" \
+            --title "Update $EXTENSION_NAME extension" \
+            --body "Release $GITHUB_REF_NAME of https://github.com/$GITHUB_REPOSITORY."

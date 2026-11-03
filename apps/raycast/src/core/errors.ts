@@ -1,0 +1,115 @@
+import { PROVIDERS, type ProviderId } from "./providers";
+
+export type ProviderErrorReason =
+  | "unauthorized"
+  | "rate_limited"
+  | "limit_reached"
+  | "server"
+  | "network"
+  | "timeout"
+  | "bad_response"
+  | "request_rejected";
+
+const RECOVERABLE_REASONS: ReadonlySet<ProviderErrorReason> = new Set([
+  "rate_limited",
+  "limit_reached",
+  "server",
+  "network",
+  "timeout",
+]);
+
+const REASON_LABELS: Readonly<Record<ProviderErrorReason, string>> = {
+  unauthorized: "invalid API key",
+  rate_limited: "rate limit reached",
+  limit_reached: "free quota used up",
+  server: "provider is down",
+  network: "unreachable",
+  timeout: "timed out",
+  bad_response: "unexpected response",
+  request_rejected: "request rejected",
+};
+
+export interface ProviderErrorDetails {
+  readonly status?: number | undefined;
+  readonly requestId?: string | undefined;
+  readonly cause?: unknown;
+}
+
+export class ProviderError extends Error {
+  override readonly name = "ProviderError";
+  readonly provider: ProviderId;
+  readonly reason: ProviderErrorReason;
+  readonly status: number | undefined;
+  readonly requestId: string | undefined;
+
+  constructor(
+    provider: ProviderId,
+    reason: ProviderErrorReason,
+    message: string,
+    details: ProviderErrorDetails = {},
+  ) {
+    super(message, { cause: details.cause });
+    this.provider = provider;
+    this.reason = reason;
+    this.status = details.status;
+    this.requestId = details.requestId;
+  }
+
+  get recoverable(): boolean {
+    return RECOVERABLE_REASONS.has(this.reason);
+  }
+
+  get summary(): string {
+    return `${PROVIDERS[this.provider].name}: ${REASON_LABELS[this.reason]}`;
+  }
+}
+
+export class AllProvidersFailedError extends Error {
+  override readonly name = "AllProvidersFailedError";
+  readonly failures: readonly ProviderError[];
+
+  constructor(failures: readonly ProviderError[]) {
+    super(failures.map((failure) => failure.summary).join(" · "));
+    this.failures = failures;
+  }
+}
+
+export class NoProviderConfiguredError extends Error {
+  override readonly name = "NoProviderConfiguredError";
+
+  constructor() {
+    super("Add a Groq or Gemini API key, or enable Ollama, in the extension preferences.");
+  }
+}
+
+export class EmptyTextError extends Error {
+  override readonly name = "EmptyTextError";
+
+  constructor() {
+    super("There is no text to translate.");
+  }
+}
+
+export interface ErrorDescription {
+  readonly title: string;
+  readonly message: string;
+}
+
+export function describeError(error: unknown): ErrorDescription {
+  if (error instanceof NoProviderConfiguredError) {
+    return { title: "No provider configured", message: error.message };
+  }
+  if (error instanceof EmptyTextError) {
+    return { title: "Nothing to translate", message: error.message };
+  }
+  if (error instanceof AllProvidersFailedError) {
+    return { title: "All providers failed", message: error.message };
+  }
+  if (error instanceof ProviderError) {
+    return { title: "Translation failed", message: error.summary };
+  }
+  if (error instanceof Error) {
+    return { title: "Translation failed", message: error.message };
+  }
+  return { title: "Translation failed", message: String(error) };
+}

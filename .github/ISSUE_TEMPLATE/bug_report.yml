@@ -1,0 +1,32 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run Translate
+        2. Choose the LinkedIn tone
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: debug-info
+    attributes:
+      label: Debug info
+      description: Paste the output of "Copy Debug Info" from the error toast. It never contains API keys.
+      render: json
+  - type: input
+    id: versions
+    attributes:
+      label: macOS and Raycast versions
+      placeholder: macOS 26.1, Raycast 1.110
