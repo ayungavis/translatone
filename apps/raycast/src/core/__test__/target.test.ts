@@ -121,6 +121,10 @@ describe("parseDirectionTag", () => {
     });
   });
 
+  test.each(["⟦", "  ⟦id", "⟦id→e"])("hides a tag that is still arriving: %p", (partial) => {
+    expect(parseDirectionTag(partial)).toEqual({ text: "", direction: undefined });
+  });
+
   test("leaves a reply without a tag unchanged", () => {
     expect(parseDirectionTag("Hello there")).toEqual({
       text: "Hello there",

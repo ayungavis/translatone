@@ -1,10 +1,10 @@
 import { Action, ActionPanel, Detail, Icon, Keyboard } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { PROVIDERS, type ProviderConfig } from "../core/providers";
 import { describeTarget, formatDirection, type TranslationTarget } from "../core/target";
 import { TONES, type ToneId } from "../core/tones";
-import { translate, type TranslationResult } from "../core/translate";
+import { translate, visibleTranslation, type TranslationResult } from "../core/translate";
 import { formatUsage } from "../core/usage";
 import { showTranslationError } from "./feedback";
 import { localStore } from "./storage";
@@ -25,12 +25,21 @@ export function TranslationDetail({
   providers,
 }: TranslationDetailProps) {
   const abortable = useRef<AbortController>(null);
+  const [streamed, setStreamed] = useState("");
   const { data, isLoading, revalidate } = usePromise(
-    (input: string, toneId: ToneId, requested: TranslationTarget) =>
-      translate(
-        { text: input, tone: toneId, target: requested, signal: abortable.current?.signal },
+    (input: string, toneId: ToneId, requested: TranslationTarget) => {
+      setStreamed("");
+      return translate(
+        {
+          text: input,
+          tone: toneId,
+          target: requested,
+          signal: abortable.current?.signal,
+          onPartial: (partial) => setStreamed(partial.text),
+        },
         { providers, store: localStore, fetch },
-      ),
+      );
+    },
     [text, tone, target],
     {
       abortable,
@@ -49,7 +58,7 @@ export function TranslationDetail({
     <Detail
       isLoading={isLoading}
       navigationTitle={data ? `Translated via ${PROVIDERS[data.provider.id].name}` : "Translating…"}
-      markdown={data?.text ?? ""}
+      markdown={visibleTranslation(data?.text, streamed, isLoading)}
       metadata={data ? <TranslationMetadata result={data} tone={tone} target={target} /> : null}
       actions={
         <ActionPanel>

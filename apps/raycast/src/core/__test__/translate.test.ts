@@ -6,15 +6,17 @@ import {
   ProviderError,
 } from "../errors";
 import { DEFAULT_LANGUAGE, resolveLanguage } from "../languages";
-import { languagePair } from "../target";
+import { languagePair, type TaggedReply } from "../target";
 import {
   completionResponse,
   MemoryStore,
   providerConfig,
   rejectionOf,
   scriptedFetch,
+  sseEvent,
+  streamResponse,
 } from "./test-helpers";
-import { translate, type TranslationDependencies } from "../translate";
+import { translate, visibleTranslation, type TranslationDependencies } from "../translate";
 import { usageKey } from "../usage";
 
 const NOW = new Date("2026-11-03T10:00:00Z");
@@ -39,6 +41,18 @@ function dependencies(
     deps: { providers: [groq, gemini], store, fetch, now: () => NOW, ...overrides },
   };
 }
+
+describe("visibleTranslation", () => {
+  test.each([
+    ["the streamed text while loading", "Old", "New par", true, "New par"],
+    ["the previous result until new text arrives", "Old", "", true, "Old"],
+    ["the finished result once loading ends", "Done", "Done", false, "Done"],
+    ["the streamed text when there is no result yet", undefined, "Par", true, "Par"],
+    ["nothing before anything arrives", undefined, "", true, ""],
+  ])("shows %s", (_label, finished, streamed, isLoading, expected) => {
+    expect(visibleTranslation(finished, streamed, isLoading)).toBe(expected);
+  });
+});
 
 describe("translate", () => {
   test("uses the first provider and records its usage", async () => {
@@ -68,6 +82,28 @@ describe("translate", () => {
     expect(typeof body === "string" ? body : "").toContain(
       "If it is English, translate it into Indonesian.",
     );
+  });
+
+  test("streams partial translations with the tag hidden", async () => {
+    const { deps } = dependencies(
+      new Map([
+        [
+          "groq.test",
+          async () =>
+            streamResponse({ chunks: [sseEvent("⟦id"), sseEvent("→en⟧\nHel"), sseEvent("lo")] }),
+        ],
+      ]),
+    );
+    const partials: TaggedReply[] = [];
+
+    const result = await translate(
+      { ...request, onPartial: (partial) => partials.push(partial) },
+      deps,
+    );
+
+    expect(partials.map((partial) => partial.text)).toEqual(["", "Hel", "Hello"]);
+    expect(partials.at(-1)?.direction).toEqual({ source: "Indonesian", target: "English" });
+    expect(result.text).toBe("Hello");
   });
 
   test("has no direction when the model omits the tag", async () => {

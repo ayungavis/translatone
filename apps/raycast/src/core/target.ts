@@ -23,6 +23,8 @@ export const AUTO_TARGET = "auto";
 
 const DIRECTION_TAG = /^\s*⟦\s*([A-Za-z-]+)\s*(?:→|->|>)\s*([A-Za-z-]+)\s*⟧\s*/;
 
+const INCOMPLETE_TAG = /^\s*⟦[^⟧]*$/;
+
 export function languagePair(main: Language, second: Language): TranslationTarget {
   return main.code === second.code
     ? { kind: "fixed", language: main }
@@ -70,6 +72,9 @@ export function formatDirection(
 }
 
 export function parseDirectionTag(reply: string): TaggedReply {
+  if (INCOMPLETE_TAG.test(reply)) {
+    return { text: "", direction: undefined };
+  }
   const match = DIRECTION_TAG.exec(reply);
   if (match?.[1] === undefined || match[2] === undefined) {
     return { text: reply, direction: undefined };

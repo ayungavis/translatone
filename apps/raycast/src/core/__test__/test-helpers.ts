@@ -29,6 +29,37 @@ export function completionResponse(content: string, init: ResponseInit = {}): Re
   return Response.json({ choices: [{ message: { role: "assistant", content } }] }, init);
 }
 
+export function sseEvent(content: string): string {
+  return `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`;
+}
+
+export interface StreamScript {
+  readonly chunks: readonly string[];
+  readonly ending?: "end" | "error" | "hang";
+  readonly signal?: AbortSignal | null | undefined;
+}
+
+export function streamResponse({ chunks, ending = "end", signal }: StreamScript): Response {
+  const encoder = new TextEncoder();
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const chunk of chunks) {
+        controller.enqueue(encoder.encode(chunk));
+      }
+      if (ending === "end") {
+        controller.close();
+      }
+      if (ending === "error") {
+        controller.error(new TypeError("connection reset"));
+      }
+      if (ending === "hang") {
+        signal?.addEventListener("abort", () => controller.error(signal.reason));
+      }
+    },
+  });
+  return new Response(body, { headers: { "Content-Type": "text/event-stream" } });
+}
+
 export function rejectionOf(promise: Promise<unknown>): Promise<unknown> {
   return promise.then(
     () => {

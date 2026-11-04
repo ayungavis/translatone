@@ -1,9 +1,19 @@
 import { describe, expect, test } from "bun:test";
 import { requestCompletion, type Fetch } from "../chat-client";
 import { ProviderError } from "../errors";
-import { completionResponse, providerConfig, rejectionOf, scriptedFetch } from "./test-helpers";
+import {
+  completionResponse,
+  providerConfig,
+  rejectionOf,
+  scriptedFetch,
+  sseEvent,
+  streamResponse,
+} from "./test-helpers";
 
 const groq = providerConfig("groq");
+
+const stallingFetch: Fetch = async (_url, init) =>
+  streamResponse({ chunks: [sseEvent("Hel")], ending: "hang", signal: init.signal });
 
 const hangingFetch: Fetch = (_url, init) =>
   new Promise((_resolve, reject) => {
@@ -162,7 +172,120 @@ describe("requestCompletion", () => {
 
     expect(await rejectionOf(result)).toBe(abortError);
   });
+});
 
+describe("requestCompletion streaming", () => {
+  const request = { provider: groq, systemPrompt: "system", text: "Halo dunia" };
+
+  test("asks for a stream and reports the text as it grows", async () => {
+    const { fetch, calls } = respondWith(async () =>
+      streamResponse({
+        chunks: [
+          sseEvent("Hel"),
+          `${sseEvent("lo")}${sseEvent(" world").slice(0, 12)}`,
+          `${sseEvent(" world").slice(12)}data: [DONE]\n\n`,
+        ],
+      }),
+    );
+    const updates: string[] = [];
+
+    const completion = await requestCompletion(fetch, request, {
+      onDelta: (text) => updates.push(text),
+    });
+
+    expect(updates).toEqual(["Hel", "Hello", "Hello world"]);
+    expect(completion.text).toBe("Hello world");
+    const body = calls[0]?.init.body;
+    expect(typeof body === "string" ? JSON.parse(body) : body).toMatchObject({ stream: true });
+  });
+
+  test("does not ask for a stream without a listener", async () => {
+    const { fetch, calls } = respondWith(async () => completionResponse("Hello"));
+
+    await requestCompletion(fetch, request);
+
+    const body = calls[0]?.init.body;
+    expect(typeof body === "string" ? JSON.parse(body) : body).not.toHaveProperty("stream");
+  });
+
+  test("ignores comments, blank events, and non-content events", async () => {
+    const { fetch } = respondWith(async () =>
+      streamResponse({
+        chunks: [
+          ": keep-alive\n\n",
+          'data: {"choices":[{"delta":{"role":"assistant"}}]}\n\n',
+          "data: not json\n\n",
+          sseEvent("Hello"),
+        ],
+      }),
+    );
+    const updates: string[] = [];
+
+    const completion = await requestCompletion(fetch, request, {
+      onDelta: (text) => updates.push(text),
+    });
+
+    expect(updates).toEqual(["Hello"]);
+    expect(completion.text).toBe("Hello");
+  });
+
+  test("reports the whole text once when the provider answers without streaming", async () => {
+    const { fetch } = respondWith(async () => completionResponse("Hello"));
+    const updates: string[] = [];
+
+    const completion = await requestCompletion(fetch, request, {
+      onDelta: (text) => updates.push(text),
+    });
+
+    expect(updates).toEqual(["Hello"]);
+    expect(completion.text).toBe("Hello");
+  });
+
+  test("rejects a stream that carries no text", async () => {
+    const { fetch } = respondWith(async () => streamResponse({ chunks: ["data: [DONE]\n\n"] }));
+
+    const error = await captureError(
+      requestCompletion(fetch, request, { onDelta: () => undefined }),
+    );
+
+    expect(error.reason).toBe("bad_response");
+  });
+
+  test("treats a dropped stream as a recoverable network failure", async () => {
+    const { fetch } = respondWith(async () =>
+      streamResponse({ chunks: [sseEvent("Hel")], ending: "error" }),
+    );
+
+    const error = await captureError(
+      requestCompletion(fetch, request, { onDelta: () => undefined }),
+    );
+
+    expect(error.reason).toBe("network");
+    expect(error.recoverable).toBe(true);
+  });
+
+  test("times out a stream that stops sending", async () => {
+    const error = await captureError(
+      requestCompletion(stallingFetch, request, { timeoutMs: 5, onDelta: () => undefined }),
+    );
+
+    expect(error.reason).toBe("timeout");
+  });
+
+  test("rethrows when the caller aborts mid-stream", async () => {
+    const controller = new AbortController();
+
+    const result = requestCompletion(
+      stallingFetch,
+      { ...request, signal: controller.signal },
+      { onDelta: () => controller.abort() },
+    );
+
+    expect(await rejectionOf(result)).toBeInstanceOf(DOMException);
+  });
+});
+
+describe("requestCompletion responses", () => {
   test("rejects a response without content", async () => {
     const { fetch } = respondWith(async () => Response.json({ choices: [] }));
 

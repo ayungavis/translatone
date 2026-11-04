@@ -6,7 +6,12 @@ import {
   ProviderError,
 } from "./errors";
 import type { ProviderConfig } from "./providers";
-import { parseDirectionTag, type Direction, type TranslationTarget } from "./target";
+import {
+  parseDirectionTag,
+  type Direction,
+  type TaggedReply,
+  type TranslationTarget,
+} from "./target";
 import { buildSystemPrompt, type ToneId } from "./tones";
 import { incrementUsage, readUsage, type KeyValueStore, type UsageSnapshot } from "./usage";
 
@@ -15,6 +20,7 @@ export interface TranslationRequest {
   readonly tone: ToneId;
   readonly target: TranslationTarget;
   readonly signal?: AbortSignal | undefined;
+  readonly onPartial?: ((partial: TaggedReply) => void) | undefined;
 }
 
 export interface TranslationDependencies {
@@ -49,6 +55,8 @@ export async function translate(
   const now = dependencies.now ?? (() => new Date());
   const systemPrompt = buildSystemPrompt(request.tone, request.target);
   const skipped: ProviderError[] = [];
+  const { onPartial } = request;
+  const onDelta = onPartial && ((raw: string) => onPartial(parseDirectionTag(raw)));
 
   for (const provider of dependencies.providers) {
     const usage = await readUsage(dependencies.store, provider, now());
@@ -61,12 +69,16 @@ export async function translate(
 
     const startedAt = performance.now();
     try {
-      const completion = await requestCompletion(dependencies.fetch, {
-        provider,
-        systemPrompt,
-        text,
-        signal: request.signal,
-      });
+      const completion = await requestCompletion(
+        dependencies.fetch,
+        {
+          provider,
+          systemPrompt,
+          text,
+          signal: request.signal,
+        },
+        { onDelta },
+      );
       return {
         ...parseDirectionTag(completion.text),
         provider,
@@ -84,4 +96,15 @@ export async function translate(
   }
 
   throw new AllProvidersFailedError(skipped);
+}
+
+export function visibleTranslation(
+  finished: string | undefined,
+  streamed: string,
+  isLoading: boolean,
+): string {
+  if (isLoading && streamed !== "") {
+    return streamed;
+  }
+  return finished ?? streamed;
 }
