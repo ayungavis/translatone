@@ -5,15 +5,15 @@ import {
   NoProviderConfiguredError,
   ProviderError,
 } from "./errors";
-import type { Language } from "./languages";
 import type { ProviderConfig } from "./providers";
+import { parseDirectionTag, type Direction, type TranslationTarget } from "./target";
 import { buildSystemPrompt, type ToneId } from "./tones";
 import { incrementUsage, readUsage, type KeyValueStore, type UsageSnapshot } from "./usage";
 
 export interface TranslationRequest {
   readonly text: string;
   readonly tone: ToneId;
-  readonly targetLanguage: Language;
+  readonly target: TranslationTarget;
   readonly signal?: AbortSignal | undefined;
 }
 
@@ -26,6 +26,7 @@ export interface TranslationDependencies {
 
 export interface TranslationResult {
   readonly text: string;
+  readonly direction: Direction | undefined;
   readonly provider: ProviderConfig;
   readonly usage: UsageSnapshot;
   readonly durationMs: number;
@@ -46,7 +47,7 @@ export async function translate(
   }
 
   const now = dependencies.now ?? (() => new Date());
-  const systemPrompt = buildSystemPrompt(request.tone, request.targetLanguage.name);
+  const systemPrompt = buildSystemPrompt(request.tone, request.target);
   const skipped: ProviderError[] = [];
 
   for (const provider of dependencies.providers) {
@@ -67,7 +68,7 @@ export async function translate(
         signal: request.signal,
       });
       return {
-        text: completion.text,
+        ...parseDirectionTag(completion.text),
         provider,
         usage: await incrementUsage(dependencies.store, provider, now()),
         durationMs: Math.round(performance.now() - startedAt),

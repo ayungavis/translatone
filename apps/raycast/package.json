@@ -107,12 +107,98 @@
       "default": "http://localhost:11434/v1"
     },
     {
-      "name": "defaultTargetLanguage",
-      "title": "Default Target Language",
-      "description": "Language used by Translate Selection and as the initial choice in Translate.",
+      "name": "mainLanguage",
+      "title": "Main Language",
+      "description": "Text in any other language is translated into this one.",
       "type": "dropdown",
       "required": false,
       "default": "en",
+      "data": [
+        {
+          "title": "English",
+          "value": "en"
+        },
+        {
+          "title": "Indonesian",
+          "value": "id"
+        },
+        {
+          "title": "Malay",
+          "value": "ms"
+        },
+        {
+          "title": "Chinese (Simplified)",
+          "value": "zh-Hans"
+        },
+        {
+          "title": "Chinese (Traditional)",
+          "value": "zh-Hant"
+        },
+        {
+          "title": "Japanese",
+          "value": "ja"
+        },
+        {
+          "title": "Korean",
+          "value": "ko"
+        },
+        {
+          "title": "Thai",
+          "value": "th"
+        },
+        {
+          "title": "Vietnamese",
+          "value": "vi"
+        },
+        {
+          "title": "Hindi",
+          "value": "hi"
+        },
+        {
+          "title": "Arabic",
+          "value": "ar"
+        },
+        {
+          "title": "Spanish",
+          "value": "es"
+        },
+        {
+          "title": "Portuguese",
+          "value": "pt"
+        },
+        {
+          "title": "French",
+          "value": "fr"
+        },
+        {
+          "title": "German",
+          "value": "de"
+        },
+        {
+          "title": "Italian",
+          "value": "it"
+        },
+        {
+          "title": "Dutch",
+          "value": "nl"
+        },
+        {
+          "title": "Russian",
+          "value": "ru"
+        },
+        {
+          "title": "Turkish",
+          "value": "tr"
+        }
+      ]
+    },
+    {
+      "name": "secondLanguage",
+      "title": "Second Language",
+      "description": "Text in your main language is translated into this one.",
+      "type": "dropdown",
+      "required": false,
+      "default": "id",
       "data": [
         {
           "title": "English",

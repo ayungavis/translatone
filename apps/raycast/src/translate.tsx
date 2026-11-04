@@ -8,8 +8,8 @@ import {
 } from "@raycast/api";
 import { FormValidation, useForm, usePromise } from "@raycast/utils";
 import { useMemo } from "react";
-import { LANGUAGES, resolveLanguage } from "./core/languages";
 import type { ProviderConfig } from "./core/providers";
+import { AUTO_TARGET, resolveTarget, targetOptions } from "./core/target";
 import { resolveTone, TONE_IDS, TONES } from "./core/tones";
 import { loadProviderUsage, summarizeProviderUsage } from "./core/usage";
 import { loadSettings, type Settings } from "./raycast/settings";
@@ -19,7 +19,7 @@ import { TranslationDetail } from "./raycast/translation-detail";
 interface TranslateFormValues {
   text: string;
   tone: string;
-  language: string;
+  target: string;
 }
 
 export default function TranslateCommand() {
@@ -34,7 +34,7 @@ export default function TranslateCommand() {
     initialValues: {
       text: "",
       tone: settings.defaultTone,
-      language: settings.defaultLanguage.code,
+      target: AUTO_TARGET,
     },
     validation: { text: FormValidation.Required },
     onSubmit: (values) => push(createTranslationView(values, settings)),
@@ -64,9 +64,9 @@ export default function TranslateCommand() {
           <Form.Dropdown.Item key={id} value={id} title={TONES[id].title} />
         ))}
       </Form.Dropdown>
-      <Form.Dropdown title="Language" {...itemProps.language}>
-        {LANGUAGES.map((language) => (
-          <Form.Dropdown.Item key={language.code} value={language.code} title={language.name} />
+      <Form.Dropdown title="Translate To" {...itemProps.target}>
+        {targetOptions(settings.target).map((option) => (
+          <Form.Dropdown.Item key={option.value} value={option.value} title={option.title} />
         ))}
       </Form.Dropdown>
       <Form.Separator />
@@ -84,7 +84,7 @@ function createTranslationView(values: TranslateFormValues, settings: Settings) 
       command="translate"
       text={values.text}
       tone={resolveTone(values.tone, settings.defaultTone)}
-      language={resolveLanguage(values.language, settings.defaultLanguage)}
+      target={resolveTarget(values.target, settings.target)}
       providers={settings.providers}
     />
   );

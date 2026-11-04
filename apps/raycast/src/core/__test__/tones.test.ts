@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
+import { DEFAULT_LANGUAGE, resolveLanguage } from "../languages";
+import { directionTagInstruction, languagePair, targetInstruction } from "../target";
 import { buildSystemPrompt, isToneId, resolveTone, TONE_IDS, TONES } from "../tones";
+
+const indonesian = resolveLanguage("id", DEFAULT_LANGUAGE);
+const pair = languagePair(DEFAULT_LANGUAGE, indonesian);
 
 describe("tones", () => {
   test("every tone id has a matching definition", () => {
@@ -19,17 +24,18 @@ describe("tones", () => {
     expect(resolveTone(undefined, "email")).toBe("email");
   });
 
-  test("builds a prompt with the target language and tone instruction", () => {
-    const prompt = buildSystemPrompt("email", "Indonesian");
+  test("builds a prompt with the target rule, tone instruction, and direction tag", () => {
+    const prompt = buildSystemPrompt("email", pair);
 
-    expect(prompt).toContain("into Indonesian");
+    expect(prompt).toContain(targetInstruction(pair));
     expect(prompt).toContain(TONES.email.instruction);
+    expect(prompt).toContain(directionTagInstruction());
   });
 });
 
 describe("meaning preservation", () => {
   test.each(TONE_IDS)("the %s prompt forbids adding, dropping, or inventing facts", (tone) => {
-    const prompt = buildSystemPrompt(tone, "English");
+    const prompt = buildSystemPrompt(tone, pair);
 
     expect(prompt).toContain("Keep the meaning exactly");
     expect(prompt).toContain("never add, remove, or invent facts, details, or commitments");
@@ -37,7 +43,7 @@ describe("meaning preservation", () => {
   });
 
   test.each(TONE_IDS)("the %s prompt copies exact tokens unchanged", (tone) => {
-    const prompt = buildSystemPrompt(tone, "English");
+    const prompt = buildSystemPrompt(tone, pair);
 
     for (const token of [
       "names",
@@ -56,7 +62,7 @@ describe("meaning preservation", () => {
   });
 
   test.each(TONE_IDS)("the %s prompt keeps emojis, line breaks, lists, and links", (tone) => {
-    expect(buildSystemPrompt(tone, "English")).toContain(
+    expect(buildSystemPrompt(tone, pair)).toContain(
       "Keep existing emojis, line breaks, lists, and Markdown links",
     );
   });

@@ -15,6 +15,7 @@ Regular translators give you one literal result. Real messages need different vo
 ## Features
 
 - **Four tones**: Default, LinkedIn, Email, and Chat (Telegram/WhatsApp)
+- **Two-way language pair**: set a main and second language (English ↔ Indonesian by default); text in your main language goes to the second, everything else to your main, and the result shows the detected direction
 - **Translate Selection**: translate highlighted text from any app without copying it
 - **Free providers with automatic fallback**: Groq → Gemini → Ollama
 - **Usage at a glance**: see how much of each free quota you have used, counted locally with no extra requests

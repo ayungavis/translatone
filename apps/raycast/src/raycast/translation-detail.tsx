@@ -1,8 +1,8 @@
 import { Action, ActionPanel, Detail, Icon, Keyboard } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
 import { useRef } from "react";
-import type { Language } from "../core/languages";
 import { PROVIDERS, type ProviderConfig } from "../core/providers";
+import { describeTarget, formatDirection, type TranslationTarget } from "../core/target";
 import { TONES, type ToneId } from "../core/tones";
 import { translate, type TranslationResult } from "../core/translate";
 import { formatUsage } from "../core/usage";
@@ -13,7 +13,7 @@ interface TranslationDetailProps {
   readonly command: string;
   readonly text: string;
   readonly tone: ToneId;
-  readonly language: Language;
+  readonly target: TranslationTarget;
   readonly providers: readonly ProviderConfig[];
 }
 
@@ -21,24 +21,24 @@ export function TranslationDetail({
   command,
   text,
   tone,
-  language,
+  target,
   providers,
 }: TranslationDetailProps) {
   const abortable = useRef<AbortController>(null);
   const { data, isLoading, revalidate } = usePromise(
-    (input: string, toneId: ToneId, target: Language) =>
+    (input: string, toneId: ToneId, requested: TranslationTarget) =>
       translate(
-        { text: input, tone: toneId, targetLanguage: target, signal: abortable.current?.signal },
+        { text: input, tone: toneId, target: requested, signal: abortable.current?.signal },
         { providers, store: localStore, fetch },
       ),
-    [text, tone, language],
+    [text, tone, target],
     {
       abortable,
       onError: (error) =>
         showTranslationError(error, {
           command,
           tone,
-          targetLanguage: language.code,
+          targetLanguage: describeTarget(target),
           textLength: text.length,
           providers,
         }),
@@ -50,7 +50,7 @@ export function TranslationDetail({
       isLoading={isLoading}
       navigationTitle={data ? `Translated via ${PROVIDERS[data.provider.id].name}` : "Translating…"}
       markdown={data?.text ?? ""}
-      metadata={data ? <TranslationMetadata result={data} tone={tone} language={language} /> : null}
+      metadata={data ? <TranslationMetadata result={data} tone={tone} target={target} /> : null}
       actions={
         <ActionPanel>
           {data ? (
@@ -74,14 +74,14 @@ export function TranslationDetail({
 interface TranslationMetadataProps {
   readonly result: TranslationResult;
   readonly tone: ToneId;
-  readonly language: Language;
+  readonly target: TranslationTarget;
 }
 
-function TranslationMetadata({ result, tone, language }: TranslationMetadataProps) {
+function TranslationMetadata({ result, tone, target }: TranslationMetadataProps) {
   return (
     <Detail.Metadata>
       <Detail.Metadata.Label title="Tone" text={TONES[tone].title} />
-      <Detail.Metadata.Label title="Language" text={language.name} />
+      <Detail.Metadata.Label title="Direction" text={formatDirection(result.direction, target)} />
       <Detail.Metadata.Separator />
       <Detail.Metadata.Label title="Provider" text={PROVIDERS[result.provider.id].name} />
       <Detail.Metadata.Label title="Model" text={result.provider.model} />

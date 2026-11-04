@@ -5,7 +5,8 @@ import {
   NoProviderConfiguredError,
   ProviderError,
 } from "../errors";
-import { DEFAULT_LANGUAGE } from "../languages";
+import { DEFAULT_LANGUAGE, resolveLanguage } from "../languages";
+import { languagePair } from "../target";
 import {
   completionResponse,
   MemoryStore,
@@ -20,7 +21,11 @@ const NOW = new Date("2026-11-03T10:00:00Z");
 const groq = providerConfig("groq");
 const gemini = providerConfig("gemini");
 
-const request = { text: "Halo", tone: "default", targetLanguage: DEFAULT_LANGUAGE } as const;
+const request = {
+  text: "Halo",
+  tone: "default",
+  target: languagePair(DEFAULT_LANGUAGE, resolveLanguage("id", DEFAULT_LANGUAGE)),
+} as const;
 
 function dependencies(
   responses: ReadonlyMap<string, () => Promise<Response>>,
@@ -48,6 +53,29 @@ describe("translate", () => {
     expect(result.usage.used).toBe(1);
     expect(result.skipped).toEqual([]);
     expect(calls).toHaveLength(1);
+  });
+
+  test("returns the direction the model reports and strips its tag", async () => {
+    const { deps, calls } = dependencies(
+      new Map([["groq.test", async () => completionResponse("⟦id→en⟧\nHello")]]),
+    );
+
+    const result = await translate(request, deps);
+
+    expect(result.text).toBe("Hello");
+    expect(result.direction).toEqual({ source: "Indonesian", target: "English" });
+    const body = calls[0]?.init.body;
+    expect(typeof body === "string" ? body : "").toContain(
+      "If it is English, translate it into Indonesian.",
+    );
+  });
+
+  test("has no direction when the model omits the tag", async () => {
+    const { deps } = dependencies(
+      new Map([["groq.test", async () => completionResponse("Hello")]]),
+    );
+
+    expect((await translate(request, deps)).direction).toBeUndefined();
   });
 
   test("falls back to the next provider when the first is rate limited", async () => {

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { DEFAULT_LANGUAGE } from "../../core/languages";
+import { DEFAULT_LANGUAGE, LANGUAGES } from "../../core/languages";
 import { PROVIDERS } from "../../core/providers";
+import manifest from "../../../package.json";
 import { loadSettings } from "../settings";
 import { raycast } from "./test-helpers";
 
@@ -11,7 +12,11 @@ describe("loadSettings", () => {
     expect(loadSettings()).toEqual({
       providers: [],
       defaultTone: "default",
-      defaultLanguage: DEFAULT_LANGUAGE,
+      target: {
+        kind: "pair",
+        main: DEFAULT_LANGUAGE,
+        second: { code: "id", name: "Indonesian" },
+      },
     });
   });
 
@@ -78,12 +83,35 @@ describe("loadSettings", () => {
     ]);
   });
 
-  test("uses the chosen tone and language", () => {
-    raycast.preferences = { defaultTone: "linkedin", defaultTargetLanguage: "ja" };
+  test("uses the chosen tone and language pair", () => {
+    raycast.preferences = { defaultTone: "linkedin", mainLanguage: "ja", secondLanguage: "en" };
 
     expect(loadSettings()).toMatchObject({
       defaultTone: "linkedin",
-      defaultLanguage: { code: "ja", name: "Japanese" },
+      target: {
+        kind: "pair",
+        main: { code: "ja", name: "Japanese" },
+        second: DEFAULT_LANGUAGE,
+      },
     });
+  });
+
+  test("translates into one fixed language when both languages are the same", () => {
+    raycast.preferences = { mainLanguage: "ja", secondLanguage: "ja" };
+
+    expect(loadSettings().target).toEqual({
+      kind: "fixed",
+      language: { code: "ja", name: "Japanese" },
+    });
+  });
+
+  test("offers every supported language in both language preferences", () => {
+    for (const name of ["mainLanguage", "secondLanguage"]) {
+      const preference = manifest.preferences.find((entry) => entry.name === name);
+
+      expect(preference?.data?.map((option) => option.value)).toEqual(
+        LANGUAGES.map(({ code }) => code),
+      );
+    }
   });
 });

@@ -1,6 +1,7 @@
 import { getPreferenceValues } from "@raycast/api";
-import { DEFAULT_LANGUAGE, resolveLanguage, type Language } from "../core/languages";
+import { DEFAULT_LANGUAGE, resolveLanguage } from "../core/languages";
 import { PROVIDERS, type ProviderConfig, type ProviderId } from "../core/providers";
+import { languagePair, type TranslationTarget } from "../core/target";
 import { DEFAULT_TONE, resolveTone, type ToneId } from "../core/tones";
 
 interface RawPreferences {
@@ -11,22 +12,28 @@ interface RawPreferences {
   readonly useOllama?: boolean;
   readonly ollamaModel?: string;
   readonly ollamaBaseUrl?: string;
-  readonly defaultTargetLanguage?: string;
+  readonly mainLanguage?: string;
+  readonly secondLanguage?: string;
   readonly defaultTone?: string;
 }
 
 export interface Settings {
   readonly providers: readonly ProviderConfig[];
   readonly defaultTone: ToneId;
-  readonly defaultLanguage: Language;
+  readonly target: TranslationTarget;
 }
+
+const SECOND_LANGUAGE = resolveLanguage("id", DEFAULT_LANGUAGE);
 
 export function loadSettings(): Settings {
   const preferences = getPreferenceValues<RawPreferences>();
   return {
     providers: resolveProviders(preferences),
     defaultTone: resolveTone(preferences.defaultTone, DEFAULT_TONE),
-    defaultLanguage: resolveLanguage(preferences.defaultTargetLanguage, DEFAULT_LANGUAGE),
+    target: languagePair(
+      resolveLanguage(preferences.mainLanguage, DEFAULT_LANGUAGE),
+      resolveLanguage(preferences.secondLanguage, SECOND_LANGUAGE),
+    ),
   };
 }
 

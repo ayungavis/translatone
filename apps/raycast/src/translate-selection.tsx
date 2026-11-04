@@ -23,7 +23,7 @@ export default function TranslateSelectionCommand() {
       command="translate-selection"
       text={selectedText}
       tone={settings.defaultTone}
-      language={settings.defaultLanguage}
+      target={settings.target}
       providers={settings.providers}
     />
   );
