@@ -1,7 +1,7 @@
 import { Action, ActionPanel, Icon, Keyboard, List, openExtensionPreferences } from "@raycast/api";
 import { useCachedState, usePromise } from "@raycast/utils";
 import { useEffect, useMemo, useState } from "react";
-import { formatDetailMarkdown, translationKey } from "./core/detail";
+import { emptyViewContent, formatDetailMarkdown, translationKey } from "./core/detail";
 import {
   describeInputSource,
   sourceOfSubmission,
@@ -20,7 +20,7 @@ import {
 } from "./core/target";
 import { isToneId, TONE_IDS, TONES, type ToneId } from "./core/tones";
 import { translate, visibleTranslation, type TranslationResult } from "./core/translate";
-import { formatUsage } from "./core/usage";
+import { formatUsage, loadProviderUsage, summarizeProviderUsage } from "./core/usage";
 import { showTranslationError } from "./raycast/feedback";
 import { readInitialInput } from "./raycast/input";
 import { deliverTranslation } from "./raycast/output";
@@ -63,13 +63,26 @@ export default function TranslateCommand() {
     [selectedTarget, settings.target],
   );
   const translation = useTranslation(query, target, tone, settings.providers);
-  const hasQuery = query.trim() !== "";
+  const { data: providerUsage } = usePromise(
+    (providers: readonly ProviderConfig[]) => loadProviderUsage(localStore, providers, new Date()),
+    [settings.providers],
+  );
+  const empty = emptyViewContent(
+    settings.providers.length,
+    providerUsage ? summarizeProviderUsage(providerUsage) : undefined,
+  );
+  const hasQuery = query.trim() !== "" && !empty.needsSetup;
   const sourceLabel = describeInputSource(sourceOfSubmission(initialInput, query));
 
   const { result } = translation;
   const pane = (
     <List.Item.Detail
-      markdown={formatDetailMarkdown(translation.visibleText, query.trim(), sourceLabel)}
+      markdown={formatDetailMarkdown({
+        translation: translation.visibleText,
+        original: query.trim(),
+        sourceLabel,
+        failed: translation.failed,
+      })}
       metadata={result ? <TranslationMetadata result={result} target={target} /> : undefined}
     />
   );
@@ -90,6 +103,14 @@ export default function TranslateCommand() {
           shortcut={Keyboard.Shortcut.Common.Save}
           onAction={() => setSelectedTarget(targetValue(swapTarget(result?.direction, target)))}
         />
+        {translation.failed ? (
+          <Action
+            title="Retry"
+            icon={Icon.ArrowClockwise}
+            shortcut={Keyboard.Shortcut.Common.Refresh}
+            onAction={translation.retry}
+          />
+        ) : null}
         {result && settings.providers.length > 1 ? (
           <Action
             title="Retry with Next Provider"
@@ -111,6 +132,21 @@ export default function TranslateCommand() {
           onAction={() => void openExtensionPreferences()}
         />
       </ActionPanel.Section>
+    </ActionPanel>
+  );
+
+  const setupActions = (
+    <ActionPanel>
+      <Action
+        title="Open Preferences"
+        icon={Icon.Gear}
+        onAction={() => void openExtensionPreferences()}
+      />
+      <Action.OpenInBrowser title="Get a Free Groq Key" url="https://console.groq.com/keys" />
+      <Action.OpenInBrowser
+        title="Get a Free Gemini Key"
+        url="https://aistudio.google.com/app/apikey"
+      />
     </ActionPanel>
   );
 
@@ -151,10 +187,10 @@ export default function TranslateCommand() {
         </List.Section>
       ) : (
         <List.EmptyView
-          icon={Icon.Globe}
-          title="Translate anything with the right tone"
-          description="Select text in any app before opening TranslaTone, or type here. Pick a tone with ↑↓ and press ↵ to paste."
-          actions={actions}
+          icon={empty.needsSetup ? Icon.Key : Icon.Globe}
+          title={empty.title}
+          description={empty.description}
+          actions={empty.needsSetup ? setupActions : actions}
         />
       )}
     </List>
@@ -263,13 +299,17 @@ function useTranslation(
       (error: unknown) => {
         if (!controller.signal.aborted) {
           setFailedKey(key);
-          void showTranslationError(error, {
-            command: "translate",
-            tone,
-            targetLanguage: formatDirection(undefined, target),
-            textLength: query.length,
-            providers,
-          });
+          void showTranslationError(
+            error,
+            {
+              command: "translate",
+              tone,
+              targetLanguage: formatDirection(undefined, target),
+              textLength: query.length,
+              providers,
+            },
+            () => setFailedKey(undefined),
+          );
         }
         return undefined;
       },
@@ -280,6 +320,8 @@ function useTranslation(
   return {
     result,
     isLoading,
+    failed: failedKey === key && query.trim() !== "",
+    retry: () => setFailedKey(undefined),
     visibleText: visibleTranslation(
       result?.text,
       streamed.key === key ? streamed.text : "",

@@ -11,3 +11,4 @@
 - Translate Selection replaces the selected text in place, and opens Translate when nothing is selected
 - Automatic fallback across Groq, Gemini, and Ollama
 - Local usage tracking per provider, API key, and model
+- Errors explain the fix: a setup screen with free key links when no provider is configured, and failure toasts with Retry or Open Preferences plus Copy Debug Info

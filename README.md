@@ -53,7 +53,7 @@ Usage is counted on your Mac per provider, API key, and model. Changing the key 
 
 ## Troubleshooting
 
-When a translation fails, the error toast offers **Copy Debug Info**. It contains the providers tried, HTTP status codes, and request IDs, never your API keys. Include it when opening an issue.
+When a translation fails, the error toast offers the fix first (**Retry** for temporary problems, **Open Preferences** for keys and models) and **Copy Debug Info** as a second action. It contains the providers tried, HTTP status codes, and request IDs, never your API keys. Include it when opening an issue.
 
 ## Development
 

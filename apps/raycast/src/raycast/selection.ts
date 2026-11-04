@@ -35,12 +35,16 @@ export async function translateSelectionInPlace(fetchFn: Fetch = fetch): Promise
       confirmationMessage("replace", { providerId: result.provider.id, skipped: result.skipped }),
     );
   } catch (error) {
-    await showTranslationError(error, {
-      command: "translate-selection",
-      tone,
-      targetLanguage: describeTarget(target),
-      textLength: input.text.length,
-      providers,
-    });
+    await showTranslationError(
+      error,
+      {
+        command: "translate-selection",
+        tone,
+        targetLanguage: describeTarget(target),
+        textLength: input.text.length,
+        providers,
+      },
+      () => void translateSelectionInPlace(fetchFn),
+    );
   }
 }

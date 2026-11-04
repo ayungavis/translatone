@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from "bun:test";
 import type { Toast } from "@raycast/api";
 import type { DiagnosticContext } from "../../core/diagnostics";
 import { NoProviderConfiguredError, ProviderError } from "../../core/errors";
@@ -14,10 +14,9 @@ const context: DiagnosticContext = {
   providers: [providerConfig("groq")],
 };
 
-function triggerPrimaryAction(toast: Toast.Options | undefined): void {
-  const action = toast?.primaryAction;
+function trigger(action: Toast.ActionOptions | undefined): void {
   if (action?.onAction === undefined) {
-    throw new Error("Expected the toast to have a primary action");
+    throw new Error("Expected the toast action to exist");
   }
   action.onAction(Object.create(null));
 }
@@ -41,14 +40,15 @@ describe("showTranslationError", () => {
       style: "FAILURE",
       title: "No provider configured",
       primaryAction: { title: "Open Preferences" },
+      secondaryAction: { title: "Copy Debug Info" },
     });
 
-    triggerPrimaryAction(raycast.toasts[0]);
+    trigger(raycast.toasts[0]?.primaryAction);
 
     expect(raycast.openExtensionPreferences).toHaveBeenCalledTimes(1);
   });
 
-  test("offers a copyable debug report for provider failures", async () => {
+  test("points to preferences for an invalid key and keeps the debug report", async () => {
     const error = new ProviderError("groq", "unauthorized", "bad key", { status: 401 });
 
     await showTranslationError(error, context);
@@ -58,15 +58,38 @@ describe("showTranslationError", () => {
       style: "FAILURE",
       title: "Translation failed",
       message: "Groq: invalid API key",
-      primaryAction: { title: "Copy Debug Info" },
+      primaryAction: { title: "Open Preferences" },
+      secondaryAction: { title: "Copy Debug Info" },
     });
 
-    triggerPrimaryAction(raycast.toasts[0]);
+    trigger(raycast.toasts[0]?.secondaryAction);
     await Bun.sleep(0);
 
     expect(raycast.clipboard).toHaveLength(1);
     expect(raycast.clipboard[0]).toContain('"reason": "unauthorized"');
     expect(raycast.clipboard[0]).not.toContain("groq-key");
     expect(raycast.toasts[1]).toMatchObject({ style: "SUCCESS", title: "Debug info copied" });
+  });
+
+  test("offers a retry for a temporary failure", async () => {
+    const onRetry = mock(() => undefined);
+
+    await showTranslationError(new ProviderError("groq", "rate_limited", "slow"), context, onRetry);
+
+    expect(raycast.toasts[0]).toMatchObject({
+      primaryAction: { title: "Retry" },
+      secondaryAction: { title: "Copy Debug Info" },
+    });
+
+    trigger(raycast.toasts[0]?.primaryAction);
+
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  test("falls back to the debug report when retrying is not possible", async () => {
+    await showTranslationError(new ProviderError("groq", "rate_limited", "slow"), context);
+
+    expect(raycast.toasts[0]?.primaryAction?.title).toBe("Copy Debug Info");
+    expect(raycast.toasts[0]?.secondaryAction).toBeUndefined();
   });
 });

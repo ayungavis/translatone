@@ -93,26 +93,41 @@ export class EmptyTextError extends Error {
   }
 }
 
+export type ErrorFix = "open_preferences" | "retry" | "none";
+
 export interface ErrorDescription {
   readonly title: string;
   readonly message: string;
+  readonly fix: ErrorFix;
 }
+
+const SETUP_REASONS: ReadonlySet<ProviderErrorReason> = new Set([
+  "unauthorized",
+  "model_unavailable",
+  "request_rejected",
+]);
 
 export function describeError(error: unknown): ErrorDescription {
   if (error instanceof NoProviderConfiguredError) {
-    return { title: "No provider configured", message: error.message };
+    return { title: "No provider configured", message: error.message, fix: "open_preferences" };
   }
   if (error instanceof EmptyTextError) {
-    return { title: "Nothing to translate", message: error.message };
+    return { title: "Nothing to translate", message: error.message, fix: "none" };
   }
   if (error instanceof AllProvidersFailedError) {
-    return { title: "All providers failed", message: error.message };
+    return { title: "All providers failed", message: error.message, fix: fixFor(error.failures) };
   }
   if (error instanceof ProviderError) {
-    return { title: "Translation failed", message: error.summary };
+    return { title: "Translation failed", message: error.summary, fix: fixFor([error]) };
   }
   if (error instanceof Error) {
-    return { title: "Translation failed", message: error.message };
+    return { title: "Translation failed", message: error.message, fix: "retry" };
   }
-  return { title: "Translation failed", message: String(error) };
+  return { title: "Translation failed", message: String(error), fix: "retry" };
+}
+
+function fixFor(failures: readonly ProviderError[]): ErrorFix {
+  return failures.every((failure) => SETUP_REASONS.has(failure.reason))
+    ? "open_preferences"
+    : "retry";
 }
