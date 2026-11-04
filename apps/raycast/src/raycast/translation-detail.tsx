@@ -1,6 +1,7 @@
 import { Action, ActionPanel, Detail, Icon, Keyboard } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
 import { useRef, useState } from "react";
+import { describeInputSource, type InputSource } from "../core/input";
 import { PROVIDERS, type ProviderConfig } from "../core/providers";
 import { describeTarget, formatDirection, type TranslationTarget } from "../core/target";
 import { TONES, type ToneId } from "../core/tones";
@@ -12,6 +13,7 @@ import { localStore } from "./storage";
 interface TranslationDetailProps {
   readonly command: string;
   readonly text: string;
+  readonly source: InputSource;
   readonly tone: ToneId;
   readonly target: TranslationTarget;
   readonly providers: readonly ProviderConfig[];
@@ -20,6 +22,7 @@ interface TranslationDetailProps {
 export function TranslationDetail({
   command,
   text,
+  source,
   tone,
   target,
   providers,
@@ -59,7 +62,11 @@ export function TranslationDetail({
       isLoading={isLoading}
       navigationTitle={data ? `Translated via ${PROVIDERS[data.provider.id].name}` : "Translating…"}
       markdown={visibleTranslation(data?.text, streamed, isLoading)}
-      metadata={data ? <TranslationMetadata result={data} tone={tone} target={target} /> : null}
+      metadata={
+        data ? (
+          <TranslationMetadata result={data} source={source} tone={tone} target={target} />
+        ) : null
+      }
       actions={
         <ActionPanel>
           {data ? (
@@ -82,15 +89,18 @@ export function TranslationDetail({
 
 interface TranslationMetadataProps {
   readonly result: TranslationResult;
+  readonly source: InputSource;
   readonly tone: ToneId;
   readonly target: TranslationTarget;
 }
 
-function TranslationMetadata({ result, tone, target }: TranslationMetadataProps) {
+function TranslationMetadata({ result, source, tone, target }: TranslationMetadataProps) {
+  const sourceLabel = describeInputSource(source);
   return (
     <Detail.Metadata>
       <Detail.Metadata.Label title="Tone" text={TONES[tone].title} />
       <Detail.Metadata.Label title="Direction" text={formatDirection(result.direction, target)} />
+      {sourceLabel ? <Detail.Metadata.Label title="Input" text={sourceLabel} /> : null}
       <Detail.Metadata.Separator />
       <Detail.Metadata.Label title="Provider" text={PROVIDERS[result.provider.id].name} />
       <Detail.Metadata.Label title="Model" text={result.provider.model} />

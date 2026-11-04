@@ -22,6 +22,7 @@ export default function TranslateSelectionCommand() {
     <TranslationDetail
       command="translate-selection"
       text={selectedText}
+      source="selection"
       tone={settings.defaultTone}
       target={settings.target}
       providers={settings.providers}

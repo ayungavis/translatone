@@ -6,6 +6,7 @@
 - Keep the original meaning in every tone, with names, numbers, links, and mentions left unchanged
 - Translate between a main and second language automatically, and show the detected direction
 - Show the translation as it streams in
+- Pre-fill Translate with the selected text, or the clipboard when nothing is selected, and show where it came from
 - Translate the selected text from any app
 - Automatic fallback across Groq, Gemini, and Ollama
 - Local usage tracking per provider, API key, and model
