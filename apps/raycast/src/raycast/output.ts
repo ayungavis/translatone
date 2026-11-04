@@ -6,11 +6,11 @@ export async function deliverTranslation(
   text: string,
   confirmation: string,
 ): Promise<void> {
-  if (action === "paste") {
+  if (action === "copy") {
+    await Clipboard.copy(text);
+  } else {
     await closeMainWindow();
     await Clipboard.paste(text);
-  } else {
-    await Clipboard.copy(text);
   }
   await showHUD(confirmation, { popToRootType: PopToRootType.Immediate });
 }

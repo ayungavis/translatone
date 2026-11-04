@@ -43,8 +43,8 @@
       "name": "translate-selection",
       "title": "Translate Selection",
       "subtitle": "TranslaTone",
-      "description": "Translate the selected text using your default tone and target language.",
-      "mode": "view"
+      "description": "Replace the selected text with its translation in your default tone. Opens Translate when nothing is selected.",
+      "mode": "no-view"
     }
   ],
   "platforms": [

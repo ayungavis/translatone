@@ -1,6 +1,6 @@
 import { getPreferenceValues } from "@raycast/api";
 import { DEFAULT_LANGUAGE, resolveLanguage } from "../core/languages";
-import { resolvePrimaryAction, type OutputAction } from "../core/output";
+import { resolvePrimaryAction, type PrimaryAction } from "../core/output";
 import { PROVIDERS, type ProviderConfig, type ProviderId } from "../core/providers";
 import { languagePair, type TranslationTarget } from "../core/target";
 import { DEFAULT_TONE, resolveTone, type ToneId } from "../core/tones";
@@ -22,7 +22,7 @@ interface RawPreferences {
 export interface Settings {
   readonly providers: readonly ProviderConfig[];
   readonly defaultTone: ToneId;
-  readonly primaryAction: OutputAction;
+  readonly primaryAction: PrimaryAction;
   readonly target: TranslationTarget;
 }
 

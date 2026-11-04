@@ -19,3 +19,17 @@ describe("deliverTranslation", () => {
     expect(raycast.events).toEqual(["hud:Copied · via Groq"]);
   });
 });
+
+describe("deliverTranslation replace", () => {
+  beforeEach(() => raycast.reset());
+
+  test("pastes over the selection like a paste", async () => {
+    await deliverTranslation("replace", "Hello", "Replaced selection · via Groq");
+
+    expect(raycast.events).toEqual([
+      "closeMainWindow",
+      "paste:Hello",
+      "hud:Replaced selection · via Groq",
+    ]);
+  });
+});

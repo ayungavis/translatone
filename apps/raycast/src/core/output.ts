@@ -1,7 +1,9 @@
 import type { ProviderError } from "./errors";
 import { PROVIDERS, type ProviderId } from "./providers";
 
-export type OutputAction = "paste" | "copy";
+export type PrimaryAction = "paste" | "copy";
+
+export type OutputAction = PrimaryAction | "replace";
 
 export interface OutputOrigin {
   readonly providerId: ProviderId;
@@ -11,13 +13,14 @@ export interface OutputOrigin {
 const CONFIRMATIONS: Readonly<Record<OutputAction, string>> = {
   paste: "Pasted",
   copy: "Copied",
+  replace: "Replaced selection",
 };
 
-export function resolvePrimaryAction(value: string | undefined): OutputAction {
+export function resolvePrimaryAction(value: string | undefined): PrimaryAction {
   return value === "copy" ? "copy" : "paste";
 }
 
-export function outputActions(primary: OutputAction): readonly OutputAction[] {
+export function outputActions(primary: PrimaryAction): readonly PrimaryAction[] {
   return primary === "paste" ? ["paste", "copy"] : ["copy", "paste"];
 }
 

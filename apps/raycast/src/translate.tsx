@@ -8,7 +8,7 @@ import {
   TYPING_DELAY_MS,
   type InitialInput,
 } from "./core/input";
-import { confirmationMessage, outputActions, type OutputAction } from "./core/output";
+import { confirmationMessage, outputActions, type PrimaryAction } from "./core/output";
 import { PROVIDERS, providersAfter, type ProviderConfig } from "./core/providers";
 import {
   formatDirection,
@@ -27,12 +27,12 @@ import { deliverTranslation } from "./raycast/output";
 import { loadSettings } from "./raycast/settings";
 import { localStore } from "./raycast/storage";
 
-const OUTPUT_TITLES: Readonly<Record<OutputAction, string>> = {
+const OUTPUT_TITLES: Readonly<Record<PrimaryAction, string>> = {
   paste: "Paste to Active App",
   copy: "Copy Translation",
 };
 
-const OUTPUT_ICONS: Readonly<Record<OutputAction, Icon>> = {
+const OUTPUT_ICONS: Readonly<Record<PrimaryAction, Icon>> = {
   paste: Icon.Clipboard,
   copy: Icon.CopyClipboard,
 };
@@ -162,7 +162,7 @@ export default function TranslateCommand() {
 }
 
 interface OutputActionItemProps {
-  readonly action: OutputAction;
+  readonly action: PrimaryAction;
   readonly result: TranslationResult;
 }
 

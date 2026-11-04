@@ -26,6 +26,7 @@ describe("confirmationMessage", () => {
   test.each([
     ["paste", "Pasted · via Groq"],
     ["copy", "Copied · via Groq"],
+    ["replace", "Replaced selection · via Groq"],
   ] as const)("confirms a %s", (kind, message) => {
     expect(confirmationMessage(kind, { providerId: "groq", skipped: [] })).toBe(message);
   });

@@ -57,6 +57,11 @@ void mock.module("@raycast/api", () => ({
     return Promise.resolve();
   },
   PopToRootType: { Default: "default", Immediate: "immediate", Suspended: "suspended" },
+  LaunchType: { UserInitiated: "userInitiated", Background: "background" },
+  launchCommand: (options: { name: string; type: string }) => {
+    raycast.events.push(`launch:${options.name}:${options.type}`);
+    return Promise.resolve();
+  },
   showHUD: (title: string, options?: { popToRootType?: unknown }) => {
     raycast.events.push(`hud:${title}`);
     raycast.huds.push({ title, popToRootType: options?.popToRootType });
@@ -64,6 +69,7 @@ void mock.module("@raycast/api", () => ({
   },
   Toast: { Style: { Animated: "ANIMATED", Success: "SUCCESS", Failure: "FAILURE" } },
   showToast: (options: Toast.Options) => {
+    raycast.events.push(`toast:${options.title}`);
     raycast.toasts.push(options);
     return Promise.resolve();
   },
