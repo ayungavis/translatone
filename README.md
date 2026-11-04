@@ -19,7 +19,7 @@ Regular translators give you one literal result. Real messages need different vo
 - **Translate Selection**: translate highlighted text from any app without copying it
 - **Free providers with automatic fallback**: Groq → Gemini → Ollama
 - **Usage at a glance**: see how much of each free quota you have used, counted locally with no extra requests
-- **Paste back instantly**: press <kbd>Enter</kbd> to paste the result into the app you came from
+- **One keystroke flow**: tones are list rows (<kbd>↑</kbd> <kbd>↓</kbd>), <kbd>↵</kbd> pastes into the app you came from, <kbd>⌘</kbd> <kbd>↵</kbd> copies, <kbd>⌘</kbd> <kbd>S</kbd> swaps direction, and <kbd>⌘</kbd> <kbd>R</kbd> retries with the next provider
 
 ## Tones
 

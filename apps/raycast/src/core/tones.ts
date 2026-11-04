@@ -7,6 +7,7 @@ export type ToneId = (typeof TONE_IDS)[number];
 export interface Tone {
   readonly id: ToneId;
   readonly title: string;
+  readonly summary: string;
   readonly instruction: string;
 }
 
@@ -14,23 +15,27 @@ export const TONES: Readonly<Record<ToneId, Tone>> = {
   default: {
     id: "default",
     title: "Default",
+    summary: "Faithful and natural",
     instruction: "Translate faithfully and naturally, like a professional translation service.",
   },
   linkedin: {
     id: "linkedin",
     title: "LinkedIn",
+    summary: "Professional and warm",
     instruction:
       "Write the translation as a LinkedIn message: professional, warm, and concise. Do not add emojis or hashtags.",
   },
   email: {
     id: "email",
     title: "Email",
+    summary: "Polite and structured",
     instruction:
       "Write the translation as a business email: polite, clear, and well structured. Keep any greeting and sign-off, adapted to the conventions of the target language.",
   },
   chat: {
     id: "chat",
     title: "Chat",
+    summary: "Short and casual",
     instruction:
       "Write the translation as a casual Telegram or WhatsApp message: short, friendly, and natural. Contractions are fine.",
   },

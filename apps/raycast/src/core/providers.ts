@@ -47,3 +47,15 @@ export interface ProviderConfig {
   readonly model: string;
   readonly apiKey: string | undefined;
 }
+
+export function providersAfter(
+  providers: readonly ProviderConfig[],
+  answered: ProviderId,
+): readonly ProviderConfig[] {
+  const index = providers.findIndex((provider) => provider.id === answered);
+  if (index === -1) {
+    return providers;
+  }
+  const rotated = [...providers.slice(index + 1), ...providers.slice(0, index)];
+  return rotated.length > 0 ? rotated : providers;
+}

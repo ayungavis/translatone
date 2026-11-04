@@ -281,7 +281,7 @@
     {
       "name": "defaultTone",
       "title": "Default Tone",
-      "description": "Tone used by Translate Selection and as the initial choice in Translate.",
+      "description": "Tone used by Translate Selection. Translate remembers the last tone you picked.",
       "type": "dropdown",
       "required": false,
       "default": "default",
@@ -301,6 +301,24 @@
         {
           "title": "Chat",
           "value": "chat"
+        }
+      ]
+    },
+    {
+      "name": "primaryAction",
+      "title": "Enter Key",
+      "description": "What ↵ does with a translation. The other action is on ⌘↵.",
+      "type": "dropdown",
+      "required": false,
+      "default": "paste",
+      "data": [
+        {
+          "title": "Paste into the previous app",
+          "value": "paste"
+        },
+        {
+          "title": "Copy to clipboard",
+          "value": "copy"
         }
       ]
     }

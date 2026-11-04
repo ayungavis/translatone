@@ -12,6 +12,8 @@ export interface InputReaders {
 
 export const MAX_CLIPBOARD_PREFILL_LENGTH = 2_000;
 
+export const TYPING_DELAY_MS = 700;
+
 const SOURCE_LABELS: Readonly<Record<InputSource, string | undefined>> = {
   selection: "From selection",
   clipboard: "From clipboard",

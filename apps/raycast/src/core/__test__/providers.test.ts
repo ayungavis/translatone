@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import manifest from "../../../package.json";
-import { PROVIDERS } from "../providers";
+import { PROVIDERS, providersAfter } from "../providers";
+import { providerConfig } from "./test-helpers";
 
 function preferenceDefault(name: string): unknown {
   return manifest.preferences.find((preference) => preference.name === name)?.default;
@@ -18,5 +19,27 @@ describe("provider defaults", () => {
     ["ollamaBaseUrl", PROVIDERS.ollama.defaultBaseUrl],
   ])("the %s preference default matches the provider default", (name, expected) => {
     expect(preferenceDefault(name)).toBe(expected);
+  });
+});
+
+describe("providersAfter", () => {
+  const groq = providerConfig("groq");
+  const gemini = providerConfig("gemini");
+  const ollama = providerConfig("ollama");
+
+  test("retries with the providers after the one that answered", () => {
+    expect(providersAfter([groq, gemini, ollama], "groq")).toEqual([gemini, ollama]);
+  });
+
+  test("wraps around to the earlier providers", () => {
+    expect(providersAfter([groq, gemini, ollama], "gemini")).toEqual([ollama, groq]);
+  });
+
+  test("keeps the list when the answering provider is no longer configured", () => {
+    expect(providersAfter([gemini, ollama], "groq")).toEqual([gemini, ollama]);
+  });
+
+  test("keeps the only provider there is", () => {
+    expect(providersAfter([groq], "groq")).toEqual([groq]);
   });
 });

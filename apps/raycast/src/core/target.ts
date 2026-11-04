@@ -71,6 +71,18 @@ export function formatDirection(
   return direction ? `${direction.source} → ${direction.target}` : describeTarget(requested);
 }
 
+export function targetValue(target: TranslationTarget): string {
+  return target.kind === "fixed" ? target.language.code : AUTO_TARGET;
+}
+
+export function swapTarget(
+  direction: Direction | undefined,
+  current: TranslationTarget,
+): TranslationTarget {
+  const source = LANGUAGES.find((language) => language.name === direction?.source);
+  return source ? { kind: "fixed", language: source } : current;
+}
+
 export function parseDirectionTag(reply: string): TaggedReply {
   if (INCOMPLETE_TAG.test(reply)) {
     return { text: "", direction: undefined };

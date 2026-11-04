@@ -12,6 +12,7 @@ describe("loadSettings", () => {
     expect(loadSettings()).toEqual({
       providers: [],
       defaultTone: "default",
+      primaryAction: "paste",
       target: {
         kind: "pair",
         main: DEFAULT_LANGUAGE,
@@ -103,6 +104,12 @@ describe("loadSettings", () => {
       kind: "fixed",
       language: { code: "ja", name: "Japanese" },
     });
+  });
+
+  test("copies instead of pasting when chosen", () => {
+    raycast.preferences = { primaryAction: "copy" };
+
+    expect(loadSettings().primaryAction).toBe("copy");
   });
 
   test("offers every supported language in both language preferences", () => {

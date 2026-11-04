@@ -13,6 +13,15 @@ describe("tones", () => {
     }
   });
 
+  test.each([
+    ["default", "Faithful and natural"],
+    ["linkedin", "Professional and warm"],
+    ["email", "Polite and structured"],
+    ["chat", "Short and casual"],
+  ] as const)("summarises the %s tone as %p", (tone, summary) => {
+    expect(TONES[tone].summary).toBe(summary);
+  });
+
   test("recognises only known tone ids", () => {
     expect(isToneId("linkedin")).toBe(true);
     expect(isToneId("pirate")).toBe(false);

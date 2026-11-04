@@ -8,6 +8,8 @@ import {
   languagePair,
   parseDirectionTag,
   resolveTarget,
+  swapTarget,
+  targetValue,
   targetInstruction,
   targetOptions,
   type TranslationTarget,
@@ -130,5 +132,31 @@ describe("parseDirectionTag", () => {
       text: "Hello there",
       direction: undefined,
     });
+  });
+});
+
+describe("swapTarget", () => {
+  test("translates back into the language that was detected as the source", () => {
+    expect(swapTarget({ source: "Indonesian", target: "English" }, pair)).toEqual({
+      kind: "fixed",
+      language: indonesian,
+    });
+  });
+
+  test("keeps the current target when the direction is unknown", () => {
+    expect(swapTarget(undefined, pair)).toBe(pair);
+  });
+
+  test("keeps the current target when the source language is not supported", () => {
+    expect(swapTarget({ source: "SW", target: "English" }, pair)).toBe(pair);
+  });
+});
+
+describe("targetValue", () => {
+  test.each([
+    ["a pair", pair, AUTO_TARGET],
+    ["a fixed target", { kind: "fixed", language: japanese } as const, "ja"],
+  ])("selects the dropdown value for %s", (_label, target, value) => {
+    expect(targetValue(target)).toBe(value);
   });
 });

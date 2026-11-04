@@ -9,6 +9,8 @@ class RaycastFake {
   readonly storage = new Map<string, string>();
   readonly toasts: Toast.Options[] = [];
   readonly clipboard: string[] = [];
+  readonly events: string[] = [];
+  readonly huds: { readonly title: string; readonly popToRootType: unknown }[] = [];
   readonly openExtensionPreferences = mock(() => Promise.resolve());
 
   reset(): void {
@@ -17,6 +19,8 @@ class RaycastFake {
     this.storage.clear();
     this.toasts.length = 0;
     this.clipboard.length = 0;
+    this.events.length = 0;
+    this.huds.length = 0;
     this.openExtensionPreferences.mockClear();
   }
 }
@@ -43,6 +47,20 @@ void mock.module("@raycast/api", () => ({
       return Promise.resolve();
     },
     readText: () => Promise.resolve(raycast.clipboard.at(-1)),
+    paste: (content: string) => {
+      raycast.events.push(`paste:${content}`);
+      return Promise.resolve();
+    },
+  },
+  closeMainWindow: () => {
+    raycast.events.push("closeMainWindow");
+    return Promise.resolve();
+  },
+  PopToRootType: { Default: "default", Immediate: "immediate", Suspended: "suspended" },
+  showHUD: (title: string, options?: { popToRootType?: unknown }) => {
+    raycast.events.push(`hud:${title}`);
+    raycast.huds.push({ title, popToRootType: options?.popToRootType });
+    return Promise.resolve();
   },
   Toast: { Style: { Animated: "ANIMATED", Success: "SUCCESS", Failure: "FAILURE" } },
   showToast: (options: Toast.Options) => {
