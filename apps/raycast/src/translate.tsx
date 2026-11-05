@@ -1,6 +1,7 @@
 import { Action, ActionPanel, Icon, Keyboard, List, openExtensionPreferences } from "@raycast/api";
 import { useCachedState, usePromise } from "@raycast/utils";
 import { useEffect, useMemo, useState } from "react";
+import { ChooseModel } from "./choose-model";
 import { emptyViewContent, formatDetailMarkdown, translationKey } from "./core/detail";
 import {
   describeInputSource,
@@ -11,6 +12,7 @@ import {
   TYPING_DELAY_MS,
   type InitialInput,
 } from "./core/input";
+import { applyModelChoices } from "./core/models";
 import { confirmationMessage, outputActions, type PrimaryAction } from "./core/output";
 import { PROVIDERS, providersAfter, type ProviderConfig } from "./core/providers";
 import {
@@ -40,6 +42,8 @@ const OUTPUT_ICONS: Readonly<Record<PrimaryAction, Icon>> = {
   copy: Icon.CopyClipboard,
 };
 
+const NO_PROVIDERS: readonly ProviderConfig[] = [];
+
 export default function TranslateCommand() {
   const settings = useMemo(() => loadSettings(), []);
   const [text, setText] = useState("");
@@ -66,10 +70,19 @@ export default function TranslateCommand() {
     () => resolveTarget(selectedTarget, settings.target),
     [selectedTarget, settings.target],
   );
-  const translation = useTranslation(query, target, tone, settings.providers);
-  const { data: providerUsage } = usePromise(
-    (providers: readonly ProviderConfig[]) => loadProviderUsage(localStore, providers, new Date()),
+  const { data: providers, revalidate: reloadModels } = usePromise(
+    (configured: readonly ProviderConfig[]) => applyModelChoices(localStore, configured),
     [settings.providers],
+  );
+  const translation = useTranslation(
+    providers ? query : "",
+    target,
+    tone,
+    providers ?? NO_PROVIDERS,
+  );
+  const { data: providerUsage } = usePromise(
+    (active: readonly ProviderConfig[]) => loadProviderUsage(localStore, active, new Date()),
+    [providers ?? NO_PROVIDERS],
   );
   const empty = emptyViewContent(
     settings.providers.length,
@@ -130,6 +143,12 @@ export default function TranslateCommand() {
             shortcut={Keyboard.Shortcut.Common.Copy}
           />
         ) : null}
+        <Action.Push
+          title="Choose Model…"
+          icon={Icon.ComputerChip}
+          shortcut={{ modifiers: ["cmd"], key: "m" }}
+          target={<ChooseModel onChange={() => void reloadModels()} />}
+        />
         <Action
           title="Open Preferences"
           icon={Icon.Gear}

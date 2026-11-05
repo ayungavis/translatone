@@ -157,7 +157,7 @@ async function forEachEventData(response: Response, onData: (data: string) => vo
   emitLine(buffer);
 }
 
-function buildHeaders(apiKey: string | undefined): Record<string, string> {
+export function buildHeaders(apiKey: string | undefined): Record<string, string> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (apiKey) {
     headers["Authorization"] = `Bearer ${apiKey}`;
@@ -165,7 +165,7 @@ function buildHeaders(apiKey: string | undefined): Record<string, string> {
   return headers;
 }
 
-async function toHttpError(
+export async function toHttpError(
   provider: ProviderConfig,
   response: Response,
   requestId: string | undefined,

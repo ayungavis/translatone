@@ -45,6 +45,13 @@
       "subtitle": "TranslaTone",
       "description": "Replace the selected text with its translation in your default tone. Opens Translate when nothing is selected.",
       "mode": "no-view"
+    },
+    {
+      "name": "choose-model",
+      "title": "Choose Model",
+      "subtitle": "TranslaTone",
+      "description": "Pick a model from your provider's model list. Overrides the model set in preferences.",
+      "mode": "view"
     }
   ],
   "platforms": [

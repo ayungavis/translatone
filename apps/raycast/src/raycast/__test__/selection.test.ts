@@ -37,6 +37,19 @@ describe("translateSelectionInPlace", () => {
     ]);
   });
 
+  test("uses the model picked with Choose Model", async () => {
+    raycast.selectedText = "Halo dunia";
+    raycast.storage.set("model:groq", "llama-3.3-70b-versatile");
+    const { fetch, calls } = groqAnswering("Hello world");
+
+    await translateSelectionInPlace(fetch);
+
+    const body = calls[0]?.init.body;
+    expect(typeof body === "string" ? JSON.parse(body) : body).toMatchObject({
+      model: "llama-3.3-70b-versatile",
+    });
+  });
+
   test("uses the tone chosen in preferences", async () => {
     raycast.selectedText = "Halo dunia";
     raycast.preferences = { groqApiKey: "groq-key", defaultTone: "email" };

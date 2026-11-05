@@ -1,5 +1,6 @@
 import { launchCommand, LaunchType, showToast, Toast } from "@raycast/api";
 import type { Fetch } from "../core/chat-client";
+import { applyModelChoices } from "../core/models";
 import { confirmationMessage } from "../core/output";
 import { describeTarget } from "../core/target";
 import { TONES } from "../core/tones";
@@ -17,7 +18,9 @@ export async function translateSelectionInPlace(fetchFn: Fetch = fetch): Promise
     return;
   }
 
-  const { defaultTone: tone, target, providers } = loadSettings();
+  const settings = loadSettings();
+  const { defaultTone: tone, target } = settings;
+  const providers = await applyModelChoices(localStore, settings.providers);
   await showToast({
     style: Toast.Style.Animated,
     title: "Translating…",
