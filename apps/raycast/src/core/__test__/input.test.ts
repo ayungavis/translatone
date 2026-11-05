@@ -1,8 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
   describeInputSource,
+  initialSearchText,
   MAX_CLIPBOARD_PREFILL_LENGTH,
+  queryFor,
   resolveInitialInput,
+  searchPlaceholder,
   sourceOfSubmission,
   type InputReaders,
 } from "../input";
@@ -91,5 +94,39 @@ describe("sourceOfSubmission", () => {
     ["edited text", "Halo dunia!", "none"],
   ] as const)("credits the source for %s", (_label, submitted, source) => {
     expect(sourceOfSubmission(initial, submitted)).toBe(source);
+  });
+});
+
+const fromSelection = { text: "Halo dunia", source: "selection" } as const;
+const fromClipboard = { text: "Copied text", source: "clipboard" } as const;
+const fromNothing = { text: "", source: "none" } as const;
+
+describe("initialSearchText", () => {
+  test.each([
+    ["pre-fills the selection", fromSelection, "Halo dunia"],
+    ["leaves the clipboard out of the search bar", fromClipboard, ""],
+    ["starts empty without input", fromNothing, ""],
+  ] as const)("%s", (_label, initial, text) => {
+    expect(initialSearchText(initial)).toBe(text);
+  });
+});
+
+describe("queryFor", () => {
+  test.each([
+    ["previews the clipboard while nothing is typed", fromClipboard, "  ", "Copied text"],
+    ["replaces the clipboard with typed text", fromClipboard, "Typed", "Typed"],
+    ["uses the typed selection text", fromSelection, "Halo dunia", "Halo dunia"],
+    ["keeps an empty search empty without a clipboard", fromSelection, "", ""],
+  ] as const)("%s", (_label, initial, typed, query) => {
+    expect(queryFor(initial, typed)).toBe(query);
+  });
+});
+
+describe("searchPlaceholder", () => {
+  test.each([
+    ["invites replacing the clipboard", fromClipboard, "Type to replace the clipboard text…"],
+    ["invites typing otherwise", fromNothing, "Type or paste text to translate…"],
+  ] as const)("%s", (_label, initial, placeholder) => {
+    expect(searchPlaceholder(initial)).toBe(placeholder);
   });
 });

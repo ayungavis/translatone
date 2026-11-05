@@ -34,6 +34,22 @@ export async function resolveInitialInput(readers: InputReaders): Promise<Initia
   return { text: "", source: "none" };
 }
 
+const DEFAULT_PLACEHOLDER = "Type or paste text to translate…";
+
+const CLIPBOARD_PLACEHOLDER = "Type to replace the clipboard text…";
+
+export function initialSearchText(initial: InitialInput): string {
+  return initial.source === "clipboard" ? "" : initial.text;
+}
+
+export function queryFor(initial: InitialInput, typed: string): string {
+  return clean(typed) === "" && initial.source === "clipboard" ? initial.text : typed;
+}
+
+export function searchPlaceholder(initial: InitialInput): string {
+  return initial.source === "clipboard" ? CLIPBOARD_PLACEHOLDER : DEFAULT_PLACEHOLDER;
+}
+
 export function describeInputSource(source: InputSource): string | undefined {
   return SOURCE_LABELS[source];
 }

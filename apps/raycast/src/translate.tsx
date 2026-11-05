@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { emptyViewContent, formatDetailMarkdown, translationKey } from "./core/detail";
 import {
   describeInputSource,
+  initialSearchText,
+  queryFor,
+  searchPlaceholder,
   sourceOfSubmission,
   TYPING_DELAY_MS,
   type InitialInput,
@@ -47,16 +50,17 @@ export default function TranslateCommand() {
 
   const { isLoading: isReadingInput } = usePromise(readInitialInput, [], {
     onData: (input) => {
+      const searchText = initialSearchText(input);
       setInitialInput(input);
-      setText(input.text);
-      setQuery(input.text);
+      setText(searchText);
+      setQuery(queryFor(input, searchText));
     },
   });
 
   useEffect(() => {
-    const timer = setTimeout(() => setQuery(text), TYPING_DELAY_MS);
+    const timer = setTimeout(() => setQuery(queryFor(initialInput, text)), TYPING_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [text]);
+  }, [text, initialInput]);
 
   const target = useMemo(
     () => resolveTarget(selectedTarget, settings.target),
@@ -157,7 +161,7 @@ export default function TranslateCommand() {
       filtering={false}
       searchText={text}
       onSearchTextChange={setText}
-      searchBarPlaceholder="Type or paste text to translate…"
+      searchBarPlaceholder={searchPlaceholder(initialInput)}
       selectedItemId={tone}
       onSelectionChange={(id) => {
         if (id !== null && isToneId(id)) {

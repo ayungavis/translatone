@@ -7,7 +7,7 @@
 - Keep the original meaning in every tone, with names, numbers, links, and mentions left unchanged
 - Translate between a main and second language automatically, and show the detected direction
 - Show the translation as it streams in
-- Pre-fill Translate with the selected text, or the clipboard when nothing is selected, and show where it came from
+- Pre-fill Translate with the selected text and show where it came from; when nothing is selected, preview the clipboard translation until you start typing
 - Translate Selection replaces the selected text in place, and opens Translate when nothing is selected
 - Automatic fallback across Groq, Gemini, and Ollama
 - Local usage tracking per provider, API key, and model
