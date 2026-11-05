@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import manifest from "../../../package.json";
-import { PROVIDERS, providersAfter } from "../providers";
+import { BYOK_PROVIDER_IDS, PROVIDERS, providersAfter } from "../providers";
 import { providerConfig } from "./test-helpers";
 
 function preferenceDefault(name: string): unknown {
@@ -19,6 +19,24 @@ describe("provider defaults", () => {
     ["ollamaBaseUrl", PROVIDERS.ollama.defaultBaseUrl],
   ])("the %s preference default matches the provider default", (name, expected) => {
     expect(preferenceDefault(name)).toBe(expected);
+  });
+});
+
+describe("your own provider preference", () => {
+  const preference = manifest.preferences.find(({ name }) => name === "byokProvider");
+
+  test("offers none plus every bring-your-own-key provider", () => {
+    expect(preference?.data?.map(({ value }) => value)).toEqual(["none", ...BYOK_PROVIDER_IDS]);
+  });
+
+  test("defaults to none", () => {
+    expect(preference?.default).toBe("none");
+  });
+
+  test("names each provider like the provider list", () => {
+    expect(preference?.data?.slice(1).map(({ title }) => title)).toEqual(
+      BYOK_PROVIDER_IDS.map((id) => PROVIDERS[id].name),
+    );
   });
 });
 

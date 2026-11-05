@@ -1,4 +1,8 @@
-export const PROVIDER_IDS = ["groq", "gemini", "ollama"] as const;
+export const BYOK_PROVIDER_IDS = ["openai", "anthropic", "openrouter", "custom"] as const;
+
+export const PROVIDER_IDS = ["groq", "gemini", "ollama", ...BYOK_PROVIDER_IDS] as const;
+
+export type ByokProviderId = (typeof BYOK_PROVIDER_IDS)[number];
 
 export type ProviderId = (typeof PROVIDER_IDS)[number];
 
@@ -39,7 +43,39 @@ export const PROVIDERS: Readonly<Record<ProviderId, ProviderInfo>> = {
     defaultModel: "llama3.1",
     limit: undefined,
   },
+  openai: {
+    id: "openai",
+    name: "OpenAI",
+    defaultBaseUrl: "https://api.openai.com/v1",
+    defaultModel: "gpt-5-mini",
+    limit: undefined,
+  },
+  anthropic: {
+    id: "anthropic",
+    name: "Anthropic",
+    defaultBaseUrl: "https://api.anthropic.com/v1",
+    defaultModel: "claude-haiku-5-5",
+    limit: undefined,
+  },
+  openrouter: {
+    id: "openrouter",
+    name: "OpenRouter",
+    defaultBaseUrl: "https://openrouter.ai/api/v1",
+    defaultModel: "openrouter/auto",
+    limit: undefined,
+  },
+  custom: {
+    id: "custom",
+    name: "Custom (OpenAI-compatible)",
+    defaultBaseUrl: "",
+    defaultModel: "",
+    limit: undefined,
+  },
 };
+
+export function isByokProviderId(value: string | undefined): value is ByokProviderId {
+  return BYOK_PROVIDER_IDS.some((id) => id === value);
+}
 
 export interface ProviderConfig {
   readonly id: ProviderId;

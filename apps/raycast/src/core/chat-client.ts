@@ -47,7 +47,8 @@ export async function requestCompletion(
   const response = await guardTransport(transport, () =>
     send(fetchFn, request, transport, onDelta !== undefined),
   );
-  const requestId = response.headers.get("x-request-id") ?? undefined;
+  const requestId =
+    response.headers.get("x-request-id") ?? response.headers.get("request-id") ?? undefined;
 
   if (!response.ok) {
     throw await toHttpError(request.provider, response, requestId);

@@ -19,9 +19,9 @@ const START_HINT =
 
 const SETUP_VIEW: EmptyViewContent = {
   needsSetup: true,
-  title: "Add a free provider to start",
+  title: "Add a provider to start",
   description:
-    "TranslaTone needs a Groq or Gemini API key (both free), or Ollama running on this Mac. Press ↵ to open preferences.",
+    "TranslaTone needs your own OpenAI, Anthropic, OpenRouter, or custom key, a free Groq or Gemini key, or Ollama running on this Mac. Press ↵ to open preferences.",
 };
 
 export function formatDetailMarkdown({

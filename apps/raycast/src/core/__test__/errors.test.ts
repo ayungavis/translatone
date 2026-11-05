@@ -55,7 +55,7 @@ describe("describeError", () => {
       "a missing provider",
       new NoProviderConfiguredError(),
       "No provider configured",
-      "Add a Groq or Gemini API key, or enable Ollama, in the extension preferences.",
+      "Add your own provider's API key, a free Groq or Gemini key, or enable Ollama, in the extension preferences.",
     ],
     ["empty text", new EmptyTextError(), "Nothing to translate", "There is no text to translate."],
     [

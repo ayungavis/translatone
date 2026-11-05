@@ -60,6 +60,20 @@ describe("requestCompletion", () => {
     });
   });
 
+  test("reads the request ID from a plain request-id header", async () => {
+    const { fetch } = respondWith(async () =>
+      completionResponse("Halo", { headers: { "request-id": "req_anthropic" } }),
+    );
+
+    const completion = await requestCompletion(fetch, {
+      provider: groq,
+      systemPrompt: "system",
+      text: "Hello",
+    });
+
+    expect(completion.requestId).toBe("req_anthropic");
+  });
+
   test("omits the authorization header when there is no API key", async () => {
     const { fetch, calls } = respondWith(async () => completionResponse("Halo"));
 

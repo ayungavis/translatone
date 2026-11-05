@@ -52,6 +52,83 @@
   ],
   "preferences": [
     {
+      "name": "preferredProvider",
+      "title": "Preferred Provider",
+      "description": "Tried first for every translation. If it is unavailable (rate limit, used-up quota, outage, timeout, or unknown model), TranslaTone falls back to your other configured providers in order. An invalid API key is shown as an error instead.",
+      "type": "dropdown",
+      "required": false,
+      "default": "own",
+      "data": [
+        {
+          "title": "Your Own Provider",
+          "value": "own"
+        },
+        {
+          "title": "Groq",
+          "value": "groq"
+        },
+        {
+          "title": "Gemini",
+          "value": "gemini"
+        },
+        {
+          "title": "Ollama",
+          "value": "ollama"
+        }
+      ]
+    },
+    {
+      "name": "byokProvider",
+      "title": "Your Own Provider",
+      "description": "Bring your own API key for OpenAI, Anthropic, OpenRouter, or any OpenAI-compatible endpoint.",
+      "type": "dropdown",
+      "required": false,
+      "default": "none",
+      "data": [
+        {
+          "title": "None",
+          "value": "none"
+        },
+        {
+          "title": "OpenAI",
+          "value": "openai"
+        },
+        {
+          "title": "Anthropic",
+          "value": "anthropic"
+        },
+        {
+          "title": "OpenRouter",
+          "value": "openrouter"
+        },
+        {
+          "title": "Custom (OpenAI-compatible)",
+          "value": "custom"
+        }
+      ]
+    },
+    {
+      "name": "byokApiKey",
+      "title": "Your API Key",
+      "description": "API key for your own provider. Optional for a custom endpoint.",
+      "type": "password",
+      "required": false
+    },
+    {
+      "name": "byokModel",
+      "title": "Your Model",
+      "description": "Model ID for your own provider, such as gpt-5-mini or anthropic/claude-haiku-5-5. Leave empty for the provider's default.",
+      "type": "textfield",
+      "required": false
+    },
+    {
+      "name": "byokBaseUrl",
+      "title": "Custom Base URL",
+      "description": "OpenAI-compatible endpoint for Custom, such as http://localhost:1234/v1.",
+      "type": "textfield",
+      "required": false
+    },
+    {
       "name": "groqApiKey",
       "title": "Groq API Key",
       "description": "Free key from console.groq.com. Tried first.",
