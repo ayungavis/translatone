@@ -14,7 +14,7 @@ import {
 } from "./core/input";
 import { applyModelChoices } from "./core/models";
 import { confirmationMessage, outputActions, type PrimaryAction } from "./core/output";
-import { PROVIDERS, providersAfter, type ProviderConfig } from "./core/providers";
+import { keyPageLinks, PROVIDERS, providersAfter, type ProviderConfig } from "./core/providers";
 import {
   formatDirection,
   resolveTarget,
@@ -165,11 +165,9 @@ export default function TranslateCommand() {
         icon={Icon.Gear}
         onAction={() => void openExtensionPreferences()}
       />
-      <Action.OpenInBrowser title="Get a Free Groq Key" url="https://console.groq.com/keys" />
-      <Action.OpenInBrowser
-        title="Get a Free Gemini Key"
-        url="https://aistudio.google.com/app/apikey"
-      />
+      {keyPageLinks().map(({ title, url }) => (
+        <Action.OpenInBrowser key={url} title={title} url={url} />
+      ))}
     </ActionPanel>
   );
 

@@ -13,4 +13,5 @@
 - Choose Model lists the models your key can use and switches with ↵; open it from Raycast or with ⌘M in Translate
 - Choose a preferred provider; when it is rate-limited, out of quota, down, or times out, TranslaTone falls back to your other providers automatically
 - Local usage tracking per provider, API key, and model
-- Errors explain the fix: a setup screen with free key links when no provider is configured, and failure toasts with Retry or Open Preferences plus Copy Debug Info
+- The start screen lists the order providers are tried in, with each one's model and usage
+- Errors explain the fix: a setup screen with links to get a key for every provider when no provider is configured, and failure toasts with Retry or Open Preferences plus Copy Debug Info

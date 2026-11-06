@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import manifest from "../../../package.json";
-import { BYOK_PROVIDER_IDS, PROVIDERS, providersAfter } from "../providers";
+import { BYOK_PROVIDER_IDS, keyPageLinks, PROVIDERS, providersAfter } from "../providers";
 import { providerConfig } from "./test-helpers";
 
 function preferenceDefault(name: string): unknown {
@@ -37,6 +37,18 @@ describe("your own provider preference", () => {
     expect(preference?.data?.slice(1).map(({ title }) => title)).toEqual(
       BYOK_PROVIDER_IDS.map((id) => PROVIDERS[id].name),
     );
+  });
+});
+
+describe("keyPageLinks", () => {
+  test("links the free key pages first, then the paid providers", () => {
+    expect(keyPageLinks()).toEqual([
+      { title: "Get a Free Groq Key", url: "https://console.groq.com/keys" },
+      { title: "Get a Free Gemini Key", url: "https://aistudio.google.com/app/apikey" },
+      { title: "Get an OpenAI Key", url: "https://platform.openai.com/api-keys" },
+      { title: "Get an Anthropic Key", url: "https://console.anthropic.com/settings/keys" },
+      { title: "Get an OpenRouter Key", url: "https://openrouter.ai/settings/keys" },
+    ]);
   });
 });
 

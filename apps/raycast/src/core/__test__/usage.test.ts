@@ -91,6 +91,10 @@ describe("provider usage overview", () => {
   test("summarizes one line per provider", () => {
     const summary = summarizeProviderUsage([
       {
+        provider: providerConfig("openai", { model: "gpt-5" }),
+        usage: { period: "day", used: 12, limit: undefined, remaining: undefined },
+      },
+      {
         provider: providerConfig("groq"),
         usage: { period: "day", used: 2, limit: 14_400, remaining: 14_398 },
       },
@@ -100,7 +104,25 @@ describe("provider usage overview", () => {
       },
     ]);
 
-    expect(summary).toBe("Groq: 2 / 14,400 today\nOllama: 5 today");
+    expect(summary).toBe(
+      [
+        "Tries in order:",
+        "1. OpenAI · gpt-5: 12 today",
+        "2. Groq · groq-model: 2 / 14,400 today",
+        "3. Ollama · ollama-model: 5 today",
+      ].join("\n"),
+    );
+  });
+
+  test("shows the only provider and its model without an order", () => {
+    const summary = summarizeProviderUsage([
+      {
+        provider: providerConfig("anthropic"),
+        usage: { period: "day", used: 1, limit: undefined, remaining: undefined },
+      },
+    ]);
+
+    expect(summary).toBe("Anthropic · anthropic-model: 1 today");
   });
 
   test("explains how to configure a provider when none is set", () => {

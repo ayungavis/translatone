@@ -75,9 +75,14 @@ export function summarizeProviderUsage(overview: readonly ProviderUsage[]): stri
   if (overview.length === 0) {
     return "No provider configured. Add an API key in the extension preferences.";
   }
-  return overview
-    .map(({ provider, usage }) => `${PROVIDERS[provider.id].name}: ${formatUsage(usage)}`)
-    .join("\n");
+  const lines = overview.map(
+    ({ provider, usage }) =>
+      `${PROVIDERS[provider.id].name} · ${provider.model}: ${formatUsage(usage)}`,
+  );
+  if (lines.length === 1) {
+    return lines.join("");
+  }
+  return ["Tries in order:", ...lines.map((line, index) => `${index + 1}. ${line}`)].join("\n");
 }
 
 function snapshot(provider: ProviderConfig, used: number): UsageSnapshot {
