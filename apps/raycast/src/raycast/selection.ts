@@ -1,5 +1,6 @@
 import { launchCommand, LaunchType, showToast, Toast } from "@raycast/api";
 import type { Fetch } from "../core/chat-client";
+import { InvalidSettingsError } from "../core/errors";
 import { applyModelChoices } from "../core/models";
 import { confirmationMessage } from "../core/output";
 import { describeTarget } from "../core/target";
@@ -8,7 +9,7 @@ import { translate } from "../core/translate";
 import { showTranslationError } from "./feedback";
 import { readInitialInput } from "./input";
 import { deliverTranslation } from "./output";
-import { loadSettings } from "./settings";
+import { loadSettings, type Settings } from "./settings";
 import { localStore } from "./storage";
 
 export async function translateSelectionInPlace(fetchFn: Fetch = fetch): Promise<void> {
@@ -18,7 +19,22 @@ export async function translateSelectionInPlace(fetchFn: Fetch = fetch): Promise
     return;
   }
 
-  const settings = loadSettings();
+  let settings: Settings;
+  try {
+    settings = loadSettings();
+  } catch (error) {
+    if (!(error instanceof InvalidSettingsError)) {
+      throw error;
+    }
+    await showTranslationError(error, {
+      command: "translate-selection",
+      tone: "default",
+      targetLanguage: "Not configured",
+      textLength: input.text.length,
+      providers: [],
+    });
+    return;
+  }
   const { defaultTone: tone, target } = settings;
   const providers = await applyModelChoices(localStore, settings.providers);
   await showToast({

@@ -41,6 +41,18 @@ export function formatDetailMarkdown({
   return [translation || placeholder(failed), "---", heading, quoted].join("\n\n");
 }
 
+export function formatClipboardPreview(text: string): string {
+  const fence = "`".repeat(
+    Math.max(3, ...Array.from(text.matchAll(/`+/g), (match) => match[0].length + 1)),
+  );
+  return [
+    "**Clipboard preview**",
+    "Press ↵ to translate. Nothing is sent from this preview until you submit it.",
+    "**Original · From clipboard**",
+    `${fence}\n${text}\n${fence}`,
+  ].join("\n\n");
+}
+
 export function emptyViewContent(
   providerCount: number,
   usageSummary: string | undefined,

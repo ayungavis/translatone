@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  formatClipboardPreview,
   currentTranslation,
   emptyViewContent,
   formatDetailMarkdown,
@@ -9,6 +10,21 @@ import { DEFAULT_LANGUAGE, resolveLanguage } from "../languages";
 import { languagePair } from "../target";
 import { providerConfig } from "./test-helpers";
 import type { TranslationResult } from "../translate";
+
+describe("formatClipboardPreview", () => {
+  test("renders remote images, HTML, and fence characters as literal clipboard text", () => {
+    const text =
+      '```\n![image](https://example.test/track)\n<img src="https://example.test/track">';
+
+    expect(formatClipboardPreview(text)).toBe(
+      `**Clipboard preview**\n\nPress ↵ to translate. Nothing is sent from this preview until you submit it.\n\n**Original · From clipboard**\n\n\`\`\`\`\n${text}\n\`\`\`\``,
+    );
+  });
+
+  test("shows ordinary text inside a fenced preview", () => {
+    expect(formatClipboardPreview("Hello")).toContain("```\nHello\n```");
+  });
+});
 
 describe("currentTranslation", () => {
   const result: TranslationResult = {

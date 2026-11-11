@@ -3,12 +3,20 @@ import {
   AllProvidersFailedError,
   describeError,
   EmptyTextError,
+  InvalidSettingsError,
   NoProviderConfiguredError,
   ProviderError,
   type ProviderErrorReason,
 } from "../errors";
 
 describe("ProviderError", () => {
+  test("points invalid provider settings to preferences", () => {
+    expect(describeError(new InvalidSettingsError("Custom Base URL is required."))).toEqual({
+      title: "Check provider settings",
+      message: "Custom Base URL is required.",
+      fix: "open_preferences",
+    });
+  });
   test.each([
     ["rate_limited", true, "Groq: rate limit reached"],
     ["limit_reached", true, "Groq: free quota used up"],

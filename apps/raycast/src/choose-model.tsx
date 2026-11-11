@@ -8,11 +8,12 @@ import {
   Toast,
 } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
-import { useMemo, useState } from "react";
-import { describeError } from "./core/errors";
+import { useState } from "react";
+import { describeError, InvalidSettingsError } from "./core/errors";
 import { applyModelChoices, clearModelChoice, listModels, saveModelChoice } from "./core/models";
 import { PROVIDERS, type ProviderConfig, type ProviderId } from "./core/providers";
-import { loadSettings } from "./raycast/settings";
+import { loadSettings, type Settings } from "./raycast/settings";
+import { SettingsErrorView } from "./raycast/settings-error";
 import { localStore } from "./raycast/storage";
 
 export default function ChooseModelCommand() {
@@ -20,11 +21,30 @@ export default function ChooseModelCommand() {
 }
 
 interface ChooseModelProps {
-  readonly onChange?: () => void;
+  readonly onChange?: (() => void) | undefined;
 }
 
 export function ChooseModel({ onChange }: ChooseModelProps) {
-  const { providers } = useMemo(() => loadSettings(), []);
+  let settings: Settings | InvalidSettingsError;
+  try {
+    settings = loadSettings();
+  } catch (error) {
+    if (!(error instanceof InvalidSettingsError)) {
+      throw error;
+    }
+    settings = error;
+  }
+  return settings instanceof InvalidSettingsError ? (
+    <SettingsErrorView error={settings} />
+  ) : (
+    <ModelList settings={settings} onChange={onChange} />
+  );
+}
+
+function ModelList({
+  settings: { providers },
+  onChange,
+}: ChooseModelProps & { readonly settings: Settings }) {
   const [providerId, setProviderId] = useState<string>(providers[0]?.id ?? "");
   const provider = providers.find(({ id }) => id === providerId);
   const { data: active, revalidate } = usePromise(

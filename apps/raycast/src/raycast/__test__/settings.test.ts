@@ -74,7 +74,7 @@ describe("loadSettings", () => {
       groqModel: " llama-3.3-70b-versatile ",
       useOllama: true,
       ollamaModel: "qwen3",
-      ollamaBaseUrl: "http://192.168.1.10:11434/v1//",
+      ollamaBaseUrl: "https://192.168.1.10:11434/v1//",
     };
 
     expect(loadSettings().providers).toEqual([
@@ -88,7 +88,7 @@ describe("loadSettings", () => {
         id: "ollama",
         apiKey: undefined,
         model: "qwen3",
-        baseUrl: "http://192.168.1.10:11434/v1",
+        baseUrl: "https://192.168.1.10:11434/v1",
       },
     ]);
   });
@@ -183,10 +183,43 @@ describe("loadSettings", () => {
     ]);
   });
 
-  test("ignores a custom endpoint without a base URL", () => {
+  test("rejects a custom endpoint without a base URL", () => {
     raycast.preferences = { byokProvider: "custom", byokApiKey: "own-key", byokModel: "qwen3" };
 
-    expect(loadSettings().providers).toEqual([]);
+    expect(() => loadSettings()).toThrow("Custom Base URL is required");
+  });
+
+  test("rejects a custom endpoint without a model", () => {
+    raycast.preferences = { byokProvider: "custom", byokBaseUrl: "http://localhost:1234/v1" };
+
+    expect(() => loadSettings()).toThrow("Your Model is required for Custom");
+  });
+
+  test.each([
+    ["not-a-url", "absolute HTTP or HTTPS URL"],
+    ["https://[invalid", "absolute HTTP or HTTPS URL"],
+    ["ftp://example.test/v1", "HTTP or HTTPS"],
+    ["http://example.test/v1", "HTTPS"],
+    ["http://localhost.example.test/v1", "HTTPS"],
+    ["https://user:password@example.test/v1", "credentials"],
+    ["https://example.test/v1?key=secret", "query"],
+    ["https://example.test/v1#secret", "fragment"],
+    ["https://example.test/v1/chat/completions", "base URL"],
+  ])("rejects unsafe or invalid endpoint %s", (byokBaseUrl, message) => {
+    raycast.preferences = { byokProvider: "custom", byokModel: "test-model", byokBaseUrl };
+
+    expect(() => loadSettings()).toThrow(message);
+  });
+
+  test.each([
+    "http://127.0.0.1:1234/v1",
+    "http://127.1:1234/v1",
+    "http://[::1]:1234/v1",
+    "https://example.test/v1",
+  ])("accepts safe endpoint %s", (byokBaseUrl) => {
+    raycast.preferences = { byokProvider: "custom", byokModel: "test-model", byokBaseUrl };
+
+    expect(loadSettings().providers[0]?.baseUrl).toBe(new URL(byokBaseUrl).toString());
   });
 
   describe("preferred provider", () => {

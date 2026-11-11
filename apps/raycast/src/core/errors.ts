@@ -99,6 +99,15 @@ export class EmptyTextError extends Error {
   }
 }
 
+export class InvalidSettingsError extends Error {
+  override readonly name: "InvalidSettingsError";
+
+  constructor(message: string) {
+    super(message);
+    this.name = "InvalidSettingsError";
+  }
+}
+
 export type ErrorFix = "open_preferences" | "retry" | "none";
 
 export interface ErrorDescription {
@@ -114,6 +123,9 @@ const SETUP_REASONS: ReadonlySet<ProviderErrorReason> = new Set([
 ]);
 
 export function describeError(error: unknown): ErrorDescription {
+  if (error instanceof InvalidSettingsError) {
+    return { title: "Check provider settings", message: error.message, fix: "open_preferences" };
+  }
   if (error instanceof NoProviderConfiguredError) {
     return { title: "No provider configured", message: error.message, fix: "open_preferences" };
   }

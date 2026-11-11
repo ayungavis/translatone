@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Fetch } from "../../core/chat-client";
-import { completionResponse, scriptedFetch } from "../../core/__test__/test-helpers";
+import { completionResponse, rejectionOf, scriptedFetch } from "../../core/__test__/test-helpers";
 import { translateSelectionInPlace } from "../selection";
 import { raycast } from "./test-helpers";
 
@@ -35,6 +35,35 @@ describe("translateSelectionInPlace", () => {
       "paste:Hello world",
       "hud:Replaced selection · via Groq",
     ]);
+  });
+
+  test("offers preferences for invalid settings without sending or pasting text", async () => {
+    raycast.selectedText = "Halo dunia";
+    raycast.preferences = { byokProvider: "custom", byokModel: "model" };
+    const { fetch, calls } = groqAnswering("unused");
+
+    await translateSelectionInPlace(fetch);
+
+    expect(calls).toHaveLength(0);
+    expect(raycast.events).not.toContain("paste:unused");
+    expect(raycast.toasts[0]).toMatchObject({
+      title: "Check provider settings",
+      primaryAction: { title: "Open Preferences" },
+    });
+  });
+
+  test("surfaces unexpected settings failures instead of hiding them", async () => {
+    raycast.selectedText = "Halo dunia";
+    raycast.preferences = {
+      get groqApiKey() {
+        throw new Error("Preferences unavailable");
+      },
+    };
+    const { fetch } = groqAnswering("unused");
+
+    expect(await rejectionOf(translateSelectionInPlace(fetch))).toMatchObject({
+      message: "Preferences unavailable",
+    });
   });
 
   test("uses the model picked with Choose Model", async () => {

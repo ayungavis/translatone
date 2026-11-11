@@ -42,8 +42,31 @@ export function initialSearchText(initial: InitialInput): string {
   return initial.source === "clipboard" ? "" : initial.text;
 }
 
-export function queryFor(initial: InitialInput, typed: string): string {
-  return clean(typed) === "" && initial.source === "clipboard" ? initial.text : typed;
+export function queryFor(
+  initial: InitialInput,
+  typed: string,
+  submittedClipboard: string | undefined,
+): string {
+  if (clean(typed) !== "") {
+    return typed;
+  }
+  return initial.source === "clipboard" && submittedClipboard === initial.text ? initial.text : "";
+}
+
+export function clipboardPreview(
+  initial: InitialInput,
+  typed: string,
+  submittedClipboard: string | undefined,
+): string | undefined {
+  return initial.source === "clipboard" &&
+    clean(typed) === "" &&
+    submittedClipboard !== initial.text
+    ? initial.text
+    : undefined;
+}
+
+export function requestQuery(current: string, debounced: string): string {
+  return current.trim() === debounced.trim() ? debounced : "";
 }
 
 export function searchPlaceholder(initial: InitialInput): string {

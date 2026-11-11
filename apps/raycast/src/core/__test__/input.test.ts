@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
   describeInputSource,
+  clipboardPreview,
   initialSearchText,
   MAX_CLIPBOARD_PREFILL_LENGTH,
   queryFor,
+  requestQuery,
   resolveInitialInput,
   searchPlaceholder,
   sourceOfSubmission,
@@ -101,6 +103,17 @@ const fromSelection = { text: "Halo dunia", source: "selection" } as const;
 const fromClipboard = { text: "Copied text", source: "clipboard" } as const;
 const fromNothing = { text: "", source: "none" } as const;
 
+describe("clipboardPreview", () => {
+  test("shows unsubmitted clipboard text without making it a translation query", () => {
+    expect(clipboardPreview(fromClipboard, "", undefined)).toBe("Copied text");
+    expect(clipboardPreview(fromClipboard, "  ", "Older clipboard")).toBe("Copied text");
+    expect(clipboardPreview(fromClipboard, "", "Copied text")).toBeUndefined();
+    expect(clipboardPreview(fromClipboard, "Typed", undefined)).toBeUndefined();
+    expect(clipboardPreview(fromSelection, "", undefined)).toBeUndefined();
+    expect(clipboardPreview(fromNothing, "", undefined)).toBeUndefined();
+  });
+});
+
 describe("initialSearchText", () => {
   test.each([
     ["pre-fills the selection", fromSelection, "Halo dunia"],
@@ -113,12 +126,30 @@ describe("initialSearchText", () => {
 
 describe("queryFor", () => {
   test.each([
-    ["previews the clipboard while nothing is typed", fromClipboard, "  ", "Copied text"],
+    ["keeps the clipboard local until submitted", fromClipboard, "  ", ""],
     ["replaces the clipboard with typed text", fromClipboard, "Typed", "Typed"],
     ["uses the typed selection text", fromSelection, "Halo dunia", "Halo dunia"],
     ["keeps an empty search empty without a clipboard", fromSelection, "", ""],
   ] as const)("%s", (_label, initial, typed, query) => {
-    expect(queryFor(initial, typed)).toBe(query);
+    expect(queryFor(initial, typed, undefined)).toBe(query);
+  });
+
+  test("translates the clipboard only after submitting that preview", () => {
+    expect(queryFor(fromClipboard, "", "Copied text")).toBe("Copied text");
+    expect(queryFor(fromClipboard, "", "Older clipboard")).toBe("");
+    expect(queryFor(fromClipboard, "Typed", "Copied text")).toBe("Typed");
+  });
+});
+
+describe("requestQuery", () => {
+  test("does not resend a submitted clipboard while a new typed query is debouncing", () => {
+    const oldClipboardQuery = queryFor(fromClipboard, "", "Copied text");
+    const currentTypedQuery = queryFor(fromClipboard, "Typed", undefined);
+
+    expect(requestQuery(currentTypedQuery, oldClipboardQuery)).toBe("");
+    expect(requestQuery(currentTypedQuery, "Typed")).toBe("Typed");
+    expect(requestQuery(queryFor(fromClipboard, "", undefined), oldClipboardQuery)).toBe("");
+    expect(requestQuery(" Typed ", "Typed")).toBe("Typed");
   });
 });
 

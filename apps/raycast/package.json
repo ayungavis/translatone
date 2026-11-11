@@ -124,14 +124,14 @@
     {
       "name": "byokModel",
       "title": "Your Model",
-      "description": "Model ID for your own provider, such as gpt-5-mini or anthropic/claude-haiku-5-5. Leave empty for the provider's default.",
+      "description": "Model ID for your own provider. Required for Custom; leave empty for a built-in provider's default.",
       "type": "textfield",
       "required": false
     },
     {
       "name": "byokBaseUrl",
       "title": "Custom Base URL",
-      "description": "OpenAI-compatible endpoint for Custom, such as http://localhost:1234/v1.",
+      "description": "API base URL for Custom, such as http://localhost:1234/v1. Remote endpoints require HTTPS. Do not include /chat/completions, credentials, a query, or a fragment.",
       "type": "textfield",
       "required": false
     },

@@ -5,19 +5,23 @@ import { ChooseModel } from "./choose-model";
 import {
   currentTranslation,
   emptyViewContent,
+  formatClipboardPreview,
   formatDetailMarkdown,
   translationKey,
 } from "./core/detail";
 import {
+  clipboardPreview,
   describeInputSource,
   initialSearchText,
   queryFor,
+  requestQuery,
   searchPlaceholder,
   sourceOfSubmission,
   TYPING_DELAY_MS,
   type InitialInput,
 } from "./core/input";
 import { applyModelChoices } from "./core/models";
+import { InvalidSettingsError } from "./core/errors";
 import { confirmationMessage, outputActions, type PrimaryAction } from "./core/output";
 import { keyPageLinks, PROVIDERS, providersAfter, type ProviderConfig } from "./core/providers";
 import {
@@ -34,7 +38,8 @@ import { formatUsage, loadProviderUsage, summarizeProviderUsage } from "./core/u
 import { showTranslationError } from "./raycast/feedback";
 import { readInitialInput } from "./raycast/input";
 import { deliverTranslation } from "./raycast/output";
-import { loadSettings } from "./raycast/settings";
+import { loadSettings, type Settings } from "./raycast/settings";
+import { SettingsErrorView } from "./raycast/settings-error";
 import { localStore } from "./raycast/storage";
 
 const OUTPUT_TITLES: Readonly<Record<PrimaryAction, string>> = {
@@ -50,9 +55,26 @@ const OUTPUT_ICONS: Readonly<Record<PrimaryAction, Icon>> = {
 const NO_PROVIDERS: readonly ProviderConfig[] = [];
 
 export default function TranslateCommand() {
-  const settings = useMemo(() => loadSettings(), []);
+  let settings: Settings | InvalidSettingsError;
+  try {
+    settings = loadSettings();
+  } catch (error) {
+    if (!(error instanceof InvalidSettingsError)) {
+      throw error;
+    }
+    settings = error;
+  }
+  return settings instanceof InvalidSettingsError ? (
+    <SettingsErrorView error={settings} />
+  ) : (
+    <Translate settings={settings} />
+  );
+}
+
+function Translate({ settings }: { readonly settings: Settings }) {
   const [text, setText] = useState("");
   const [query, setQuery] = useState("");
+  const [submittedClipboard, setSubmittedClipboard] = useState<string | undefined>(undefined);
   const [initialInput, setInitialInput] = useState<InitialInput>({ text: "", source: "none" });
   const [selectedTarget, setSelectedTarget] = useState(targetValue(settings.target));
   const [tone, setTone] = useCachedState<ToneId>("tone", settings.defaultTone);
@@ -62,14 +84,17 @@ export default function TranslateCommand() {
       const searchText = initialSearchText(input);
       setInitialInput(input);
       setText(searchText);
-      setQuery(queryFor(input, searchText));
+      setQuery(queryFor(input, searchText, undefined));
     },
   });
 
   useEffect(() => {
-    const timer = setTimeout(() => setQuery(queryFor(initialInput, text)), TYPING_DELAY_MS);
+    const timer = setTimeout(
+      () => setQuery(queryFor(initialInput, text, submittedClipboard)),
+      TYPING_DELAY_MS,
+    );
     return () => clearTimeout(timer);
-  }, [text, initialInput]);
+  }, [text, initialInput, submittedClipboard]);
 
   const target = useMemo(
     () => resolveTarget(selectedTarget, settings.target),
@@ -79,9 +104,10 @@ export default function TranslateCommand() {
     (configured: readonly ProviderConfig[]) => applyModelChoices(localStore, configured),
     [settings.providers],
   );
+  const currentQuery = queryFor(initialInput, text, submittedClipboard);
   const translation = useTranslation(
-    providers ? query : "",
-    queryFor(initialInput, text),
+    providers ? requestQuery(currentQuery, query) : "",
+    currentQuery,
     target,
     tone,
     providers ?? NO_PROVIDERS,
@@ -95,23 +121,40 @@ export default function TranslateCommand() {
     providerUsage ? summarizeProviderUsage(providerUsage) : undefined,
   );
   const hasQuery = query.trim() !== "" && !empty.needsSetup;
+  const preview = empty.needsSetup
+    ? undefined
+    : clipboardPreview(initialInput, text, submittedClipboard);
   const sourceLabel = describeInputSource(sourceOfSubmission(initialInput, query));
 
   const { result } = translation;
   const pane = (
     <List.Item.Detail
-      markdown={formatDetailMarkdown({
-        translation: translation.visibleText,
-        original: query.trim(),
-        sourceLabel,
-        failed: translation.failed,
-      })}
+      markdown={
+        preview !== undefined
+          ? formatClipboardPreview(preview)
+          : formatDetailMarkdown({
+              translation: translation.visibleText,
+              original: query.trim(),
+              sourceLabel,
+              failed: translation.failed,
+            })
+      }
       metadata={result ? <TranslationMetadata result={result} target={target} /> : undefined}
     />
   );
 
   const actions = (
     <ActionPanel>
+      {preview !== undefined ? (
+        <Action
+          title="Translate Clipboard"
+          icon={Icon.Globe}
+          onAction={() => {
+            setSubmittedClipboard(preview);
+            setQuery(preview);
+          }}
+        />
+      ) : null}
       {result ? (
         <ActionPanel.Section>
           {outputActions(settings.primaryAction).map((action) => (
@@ -180,10 +223,13 @@ export default function TranslateCommand() {
   return (
     <List
       isLoading={isReadingInput || translation.isLoading}
-      isShowingDetail={hasQuery}
+      isShowingDetail={hasQuery || preview !== undefined}
       filtering={false}
       searchText={text}
-      onSearchTextChange={setText}
+      onSearchTextChange={(value) => {
+        setSubmittedClipboard(undefined);
+        setText(value);
+      }}
       searchBarPlaceholder={searchPlaceholder(initialInput)}
       selectedItemId={tone}
       onSelectionChange={(id) => {
@@ -199,7 +245,7 @@ export default function TranslateCommand() {
         </List.Dropdown>
       }
     >
-      {hasQuery ? (
+      {hasQuery || preview !== undefined ? (
         <List.Section title="Tone">
           {TONE_IDS.map((id) => (
             <List.Item

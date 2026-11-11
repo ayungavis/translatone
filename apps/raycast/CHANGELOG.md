@@ -1,5 +1,12 @@
 # TranslaTone Changelog
 
+## [Private Clipboard Preview and Setup] - {PR_MERGE_DATE}
+
+- Preview clipboard text locally and choose Translate Clipboard before sending it to a provider
+- Validate Custom model IDs and provider URLs, with actionable settings errors
+- Require HTTPS for remote endpoints and keep HTTP support for loopback addresses
+- Add setup, privacy, and troubleshooting instructions to the extension package
+
 ## [Custom Provider Streaming] - {PR_MERGE_DATE}
 
 - Accept a successful stream finish signal from compatible providers even when they omit the final DONE marker
