@@ -53,7 +53,7 @@ describe("showTranslationError", () => {
 
     await showTranslationError(error, context);
 
-    expect(consoleError).toHaveBeenCalledWith(error);
+    expect(consoleError).toHaveBeenCalledWith(expect.stringContaining('"status": 401'));
     expect(raycast.toasts[0]).toMatchObject({
       style: "FAILURE",
       title: "Translation failed",
@@ -84,6 +84,20 @@ describe("showTranslationError", () => {
     trigger(raycast.toasts[0]?.primaryAction);
 
     expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  test("redacts secrets before logging errors or showing generic error messages", async () => {
+    await showTranslationError(
+      new Error("Rejected groq-key at https://user:pass@test.invalid/v1?token=secret"),
+      context,
+    );
+
+    const logged: unknown = consoleError.mock.calls[0]?.[0];
+    expect(typeof logged).toBe("string");
+    expect(String(logged)).not.toContain("groq-key");
+    expect(String(logged)).not.toContain("user:pass");
+    expect(String(logged)).not.toContain("token=secret");
+    expect(raycast.toasts[0]?.message).toBe("Rejected [REDACTED] at https://test.invalid/v1");
   });
 
   test("falls back to the debug report when retrying is not possible", async () => {

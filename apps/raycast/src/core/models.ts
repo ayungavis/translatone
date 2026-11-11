@@ -1,4 +1,5 @@
 import { buildHeaders, REQUEST_TIMEOUT_MS, toHttpError, type Fetch } from "./chat-client";
+import { redactErrorCause, redactSensitiveText } from "./diagnostics";
 import { ProviderError } from "./errors";
 import type { ProviderConfig, ProviderId } from "./providers";
 import type { KeyValueStore } from "./usage";
@@ -12,9 +13,14 @@ export async function listModels(fetchFn: Fetch, provider: ProviderConfig): Prom
     headers: modelHeaders(provider),
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   }).catch((error: unknown) => {
-    throw new ProviderError(provider.id, "network", `Could not reach ${provider.baseUrl}.`, {
-      cause: error,
-    });
+    throw new ProviderError(
+      provider.id,
+      "network",
+      `Could not reach ${redactSensitiveText(provider.baseUrl, [provider])}.`,
+      {
+        cause: redactErrorCause(error, [provider]),
+      },
+    );
   });
   const requestId =
     response.headers.get("x-request-id") ?? response.headers.get("request-id") ?? undefined;

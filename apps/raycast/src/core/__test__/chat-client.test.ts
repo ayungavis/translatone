@@ -33,6 +33,58 @@ async function captureError(promise: Promise<unknown>): Promise<ProviderError> {
 }
 
 describe("requestCompletion", () => {
+  test("omits sampling parameters unsupported by the default OpenAI model", async () => {
+    const { fetch, calls } = respondWith(async () => completionResponse("Halo"));
+
+    await requestCompletion(fetch, {
+      provider: providerConfig("openai", { baseUrl: groq.baseUrl, model: "gpt-5-mini" }),
+      systemPrompt: "system",
+      text: "Hello",
+    });
+
+    const body = calls[0]?.init.body;
+    expect(typeof body === "string" ? JSON.parse(body) : body).not.toHaveProperty("temperature");
+  });
+
+  test("redacts an echoed API key before shortening provider errors", async () => {
+    const apiKey = `example-secret-${"x".repeat(400)}`;
+    const { fetch } = respondWith(async () =>
+      Response.json({ error: { message: `Rejected ${apiKey}` } }, { status: 401 }),
+    );
+
+    const error = await captureError(
+      requestCompletion(fetch, {
+        provider: { ...groq, apiKey },
+        systemPrompt: "system",
+        text: "Hello",
+      }),
+    );
+
+    expect(error.message).toBe("Rejected [REDACTED]");
+  });
+
+  test("redacts transport error messages and causes before exposing them", async () => {
+    const provider = providerConfig("custom", {
+      baseUrl: "https://user:pass@custom.test/v1?token=secret",
+      apiKey: "example-key",
+    });
+    const error = await captureError(
+      requestCompletion(
+        async () => {
+          throw new Error(
+            "Could not send example-key to https://user:pass@custom.test/v1?token=secret",
+          );
+        },
+        { provider, systemPrompt: "system", text: "Hello" },
+      ),
+    );
+
+    expect(error.message).toBe("Could not reach https://custom.test/v1.");
+    expect(error.cause instanceof Error ? error.cause.message : error.cause).toBe(
+      "Could not send [REDACTED] to https://custom.test/v1",
+    );
+  });
+
   test("sends an OpenAI-compatible request and returns the trimmed content", async () => {
     const { fetch, calls } = respondWith(async () =>
       completionResponse("  Halo  ", { headers: { "x-request-id": "req_1" } }),
@@ -191,6 +243,64 @@ describe("requestCompletion", () => {
 describe("requestCompletion streaming", () => {
   const request = { provider: groq, systemPrompt: "system", text: "Halo dunia" };
 
+  test("rejects a stream that ends without a completion marker", async () => {
+    const { fetch } = respondWith(async () => streamResponse({ chunks: [sseEvent("Partial")] }));
+
+    const error = await captureError(
+      requestCompletion(fetch, request, { onDelta: () => undefined }),
+    );
+
+    expect(error.reason).toBe("network");
+    expect(error.recoverable).toBe(true);
+  });
+
+  test("rejects a provider error event even after receiving text", async () => {
+    const { fetch } = respondWith(async () =>
+      streamResponse({
+        chunks: [
+          sseEvent("Partial"),
+          'data: {"error":{"message":"server failed"}}\n\ndata: [DONE]\n\n',
+        ],
+      }),
+    );
+
+    const error = await captureError(
+      requestCompletion(fetch, request, { onDelta: () => undefined }),
+    );
+
+    expect(error.reason).toBe("server");
+    expect(error.recoverable).toBe(true);
+  });
+
+  test("rejects malformed stream data instead of returning partial text", async () => {
+    const { fetch } = respondWith(async () =>
+      streamResponse({ chunks: [sseEvent("Hello"), "data: {broken-json\n\ndata: [DONE]\n\n"] }),
+    );
+
+    const error = await captureError(
+      requestCompletion(fetch, request, { onDelta: () => undefined }),
+    );
+
+    expect(error.reason).toBe("bad_response");
+  });
+
+  test.each(["length", "content_filter"])("rejects a stream finished with %s", async (reason) => {
+    const { fetch } = respondWith(async () =>
+      streamResponse({
+        chunks: [
+          sseEvent("Partial"),
+          `data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: reason }] })}\n\ndata: [DONE]\n\n`,
+        ],
+      }),
+    );
+
+    const error = await captureError(
+      requestCompletion(fetch, request, { onDelta: () => undefined }),
+    );
+
+    expect(error.reason).toBe("bad_response");
+  });
+
   test("asks for a stream and reports the text as it grows", async () => {
     const { fetch, calls } = respondWith(async () =>
       streamResponse({
@@ -228,8 +338,9 @@ describe("requestCompletion streaming", () => {
         chunks: [
           ": keep-alive\n\n",
           'data: {"choices":[{"delta":{"role":"assistant"}}]}\n\n',
-          "data: not json\n\n",
+          'data: {"usage":{"total_tokens":10}}\n\n',
           sseEvent("Hello"),
+          "data: [DONE]\n\n",
         ],
       }),
     );
@@ -300,6 +411,19 @@ describe("requestCompletion streaming", () => {
 });
 
 describe("requestCompletion responses", () => {
+  test("rejects a non-streaming response truncated by the output limit", async () => {
+    const { fetch } = respondWith(async () =>
+      Response.json({
+        choices: [{ message: { content: "Partial" }, finish_reason: "length" }],
+      }),
+    );
+
+    const error = await captureError(
+      requestCompletion(fetch, { provider: groq, systemPrompt: "system", text: "Hello" }),
+    );
+
+    expect(error.reason).toBe("bad_response");
+  });
   test("rejects a response without content", async () => {
     const { fetch } = respondWith(async () => Response.json({ choices: [] }));
 

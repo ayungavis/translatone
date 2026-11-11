@@ -1,5 +1,8 @@
+import { createHash } from "node:crypto";
+import type { ProviderConfig } from "./providers";
 import { describeTarget, type TranslationTarget } from "./target";
 import type { ToneId } from "./tones";
+import type { TranslationResult } from "./translate";
 
 export interface DetailContent {
   readonly translation: string;
@@ -52,8 +55,28 @@ export function emptyViewContent(
   };
 }
 
-export function translationKey(text: string, target: TranslationTarget, tone: ToneId): string {
-  return JSON.stringify([text.trim(), describeTarget(target), tone]);
+export function translationKey(
+  text: string,
+  target: TranslationTarget,
+  tone: ToneId,
+  providers: readonly ProviderConfig[],
+): string {
+  const configuration = providers.map(({ id, baseUrl, model, apiKey }) => [
+    id,
+    baseUrl,
+    model,
+    apiKey,
+  ]);
+  const fingerprint = createHash("sha256").update(JSON.stringify(configuration)).digest("hex");
+  return JSON.stringify([text.trim(), describeTarget(target), tone, fingerprint]);
+}
+
+export function currentTranslation(
+  result: TranslationResult | undefined,
+  requestedKey: string,
+  currentKey: string,
+): TranslationResult | undefined {
+  return requestedKey === currentKey ? result : undefined;
 }
 
 function placeholder(failed: boolean): string {

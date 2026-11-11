@@ -29,7 +29,35 @@ export function buildDebugReport(
     })),
     error: serializeError(error),
   };
-  return JSON.stringify(report, null, 2);
+  return JSON.stringify(
+    report,
+    (_key, value: unknown) =>
+      typeof value === "string" ? redactSensitiveText(value, context.providers) : value,
+    2,
+  );
+}
+
+export function redactSensitiveText(text: string, providers: readonly ProviderConfig[]): string {
+  const withoutUrlCredentials = text.replace(/https?:\/\/[^\s"'<>]+/gi, (value) => {
+    if (!URL.canParse(value)) {
+      return "[REDACTED URL]";
+    }
+    const url = new URL(value);
+    return `${url.protocol}//${url.host}${url.pathname}`;
+  });
+  const keys = providers
+    .flatMap(({ apiKey }) => (apiKey ? [apiKey, encodeURIComponent(apiKey)] : []))
+    .toSorted((left, right) => right.length - left.length);
+  return keys.reduce(
+    (redacted, key) => redacted.replaceAll(key, "[REDACTED]"),
+    withoutUrlCredentials,
+  );
+}
+
+export function redactErrorCause(error: unknown, providers: readonly ProviderConfig[]): Error {
+  return new Error(
+    redactSensitiveText(error instanceof Error ? error.message : String(error), providers),
+  );
 }
 
 function serializeError(error: unknown): unknown {

@@ -45,4 +45,10 @@ jobs:
           node-version: 24
       - run: bun install --frozen-lockfile
       - run: bun run build
+      - name: Generate the standalone npm lockfile for Store validation
+        run: |
+          STAGE="$(mktemp -d)"
+          cp package.json "$STAGE/"
+          (cd "$STAGE" && npm install --package-lock-only --ignore-scripts --no-audit --no-fund)
+          cp "$STAGE/package-lock.json" .
       - run: bun run lint

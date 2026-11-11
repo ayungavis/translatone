@@ -90,7 +90,9 @@ describe("translate", () => {
         [
           "groq.test",
           async () =>
-            streamResponse({ chunks: [sseEvent("⟦id"), sseEvent("→en⟧\nHel"), sseEvent("lo")] }),
+            streamResponse({
+              chunks: [sseEvent("⟦id"), sseEvent("→en⟧\nHel"), sseEvent("lo"), "data: [DONE]\n\n"],
+            }),
         ],
       ]),
     );

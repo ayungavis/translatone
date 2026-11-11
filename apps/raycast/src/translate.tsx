@@ -2,7 +2,12 @@ import { Action, ActionPanel, Icon, Keyboard, List, openExtensionPreferences } f
 import { useCachedState, usePromise } from "@raycast/utils";
 import { useEffect, useMemo, useState } from "react";
 import { ChooseModel } from "./choose-model";
-import { emptyViewContent, formatDetailMarkdown, translationKey } from "./core/detail";
+import {
+  currentTranslation,
+  emptyViewContent,
+  formatDetailMarkdown,
+  translationKey,
+} from "./core/detail";
 import {
   describeInputSource,
   initialSearchText,
@@ -76,6 +81,7 @@ export default function TranslateCommand() {
   );
   const translation = useTranslation(
     providers ? query : "",
+    queryFor(initialInput, text),
     target,
     tone,
     providers ?? NO_PROVIDERS,
@@ -280,6 +286,7 @@ interface Attempt {
 
 function useTranslation(
   query: string,
+  currentQuery: string,
   target: TranslationTarget,
   tone: ToneId,
   providers: readonly ProviderConfig[],
@@ -290,11 +297,13 @@ function useTranslation(
   const [failedKey, setFailedKey] = useState<string | undefined>(undefined);
   const [retry, setRetry] = useState<Attempt | undefined>(undefined);
 
-  const key = translationKey(query, target, tone);
+  const key = translationKey(query, target, tone, providers);
+  const currentKey = translationKey(currentQuery, target, tone, providers);
   const retrying = retry?.key === key ? retry : undefined;
   const cached = retrying ? undefined : cache.get(key);
   const isLoading = query.trim() !== "" && cached === undefined && failedKey !== key;
-  const result = cached ?? (isLoading ? lastResult : undefined);
+  const result = currentTranslation(cached, key, currentKey);
+  const displayed = cached ?? (isLoading ? lastResult : undefined);
 
   useEffect(() => {
     if (!isLoading) {
@@ -312,6 +321,9 @@ function useTranslation(
       { providers: retrying?.providers ?? providers, store: localStore, fetch },
     ).then(
       (translated) => {
+        if (controller.signal.aborted) {
+          return undefined;
+        }
         setCache((previous) => new Map(previous).set(key, translated));
         setLastResult(translated);
         setRetry(undefined);
@@ -344,7 +356,7 @@ function useTranslation(
     failed: failedKey === key && query.trim() !== "",
     retry: () => setFailedKey(undefined),
     visibleText: visibleTranslation(
-      result?.text,
+      displayed?.text,
       streamed.key === key ? streamed.text : "",
       isLoading,
     ),

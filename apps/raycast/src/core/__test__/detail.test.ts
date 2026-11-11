@@ -1,7 +1,38 @@
 import { describe, expect, test } from "bun:test";
-import { emptyViewContent, formatDetailMarkdown, translationKey } from "../detail";
+import {
+  currentTranslation,
+  emptyViewContent,
+  formatDetailMarkdown,
+  translationKey,
+} from "../detail";
 import { DEFAULT_LANGUAGE, resolveLanguage } from "../languages";
 import { languagePair } from "../target";
+import { providerConfig } from "./test-helpers";
+import type { TranslationResult } from "../translate";
+
+describe("currentTranslation", () => {
+  const result: TranslationResult = {
+    text: "Hello",
+    direction: undefined,
+    provider: providerConfig("groq"),
+    usage: { period: "day", used: 1, limit: 1000, remaining: 999 },
+    durationMs: 1,
+    requestId: undefined,
+    skipped: [],
+  };
+
+  test("makes a completed result available only for its current request", () => {
+    expect(currentTranslation(result, "current", "current")).toBe(result);
+    expect(currentTranslation(undefined, "current", "current")).toBeUndefined();
+  });
+
+  test.each(["new text before debounce", "new tone", "new language", "new model"])(
+    "withholds an old result for %s",
+    (currentKey) => {
+      expect(currentTranslation(result, "previous", currentKey)).toBeUndefined();
+    },
+  );
+});
 
 describe("formatDetailMarkdown", () => {
   test("shows the translation first and the original quoted below with its source", () => {
@@ -81,14 +112,28 @@ describe("translationKey", () => {
   const pair = languagePair(DEFAULT_LANGUAGE, resolveLanguage("id", DEFAULT_LANGUAGE));
 
   test("is the same for the same text, target, and tone", () => {
-    expect(translationKey(" Halo ", pair, "email")).toBe(translationKey("Halo", pair, "email"));
+    expect(translationKey(" Halo ", pair, "email", [])).toBe(
+      translationKey("Halo", pair, "email", []),
+    );
   });
 
   test.each([
-    ["text", translationKey("Halo!", pair, "email")],
-    ["tone", translationKey("Halo", pair, "chat")],
-    ["target", translationKey("Halo", { kind: "fixed", language: DEFAULT_LANGUAGE }, "email")],
+    ["model", [providerConfig("groq", { model: "new-model" })]],
+    ["key", [providerConfig("groq", { apiKey: "new-key" })]],
+    ["endpoint", [providerConfig("groq", { baseUrl: "https://other.test/v1" })]],
+    ["provider", [providerConfig("gemini")]],
+    ["order", [providerConfig("gemini"), providerConfig("groq")]],
+  ])("changes when the effective provider %s changes", (_label, providers) => {
+    expect(translationKey("Halo", pair, "email", providers)).not.toBe(
+      translationKey("Halo", pair, "email", [providerConfig("groq")]),
+    );
+  });
+
+  test.each([
+    ["text", translationKey("Halo!", pair, "email", [])],
+    ["tone", translationKey("Halo", pair, "chat", [])],
+    ["target", translationKey("Halo", { kind: "fixed", language: DEFAULT_LANGUAGE }, "email", [])],
   ])("changes with the %s", (_label, other) => {
-    expect(other).not.toBe(translationKey("Halo", pair, "email"));
+    expect(other).not.toBe(translationKey("Halo", pair, "email", []));
   });
 });

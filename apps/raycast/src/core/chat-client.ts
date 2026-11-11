@@ -1,3 +1,4 @@
+import { redactErrorCause, redactSensitiveText } from "./diagnostics";
 import { ProviderError, type ProviderErrorReason } from "./errors";
 import type { ProviderConfig } from "./providers";
 
@@ -54,7 +55,9 @@ export async function requestCompletion(
     throw await toHttpError(request.provider, response, requestId);
   }
 
-  const text = await guardTransport(transport, () => readText(response, onDelta));
+  const text = await guardTransport(transport, () =>
+    readText(response, onDelta, request.provider.id, requestId),
+  );
   if (text === undefined) {
     throw new ProviderError(
       request.provider.id,
@@ -77,7 +80,6 @@ function send(
     headers: buildHeaders(provider.apiKey),
     body: JSON.stringify({
       model: provider.model,
-      temperature: 0.3,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: text },
@@ -102,20 +104,29 @@ function toTransportError({ provider, signal, timeout, timeoutMs }: Transport, e
   }
   if (timeout.aborted) {
     return new ProviderError(provider.id, "timeout", `No response after ${timeoutMs} ms.`, {
-      cause: error,
+      cause: redactErrorCause(error, [provider]),
     });
   }
-  return new ProviderError(provider.id, "network", `Could not reach ${provider.baseUrl}.`, {
-    cause: error,
-  });
+  return new ProviderError(
+    provider.id,
+    "network",
+    `Could not reach ${redactSensitiveText(provider.baseUrl, [provider])}.`,
+    {
+      cause: redactErrorCause(error, [provider]),
+    },
+  );
 }
 
 async function readText(
   response: Response,
   onDelta: ((text: string) => void) | undefined,
+  provider: ProviderConfig["id"],
+  requestId: string | undefined,
 ): Promise<string | undefined> {
   if (onDelta === undefined || !isEventStream(response)) {
-    const text = extractContent(await response.json().catch(() => undefined));
+    const body: unknown = await response.json().catch(() => undefined);
+    assertCompleteResponse(body, provider, response.status, requestId);
+    const text = extractContent(body);
     if (text !== undefined) {
       onDelta?.(text);
     }
@@ -123,7 +134,26 @@ async function readText(
   }
   let text = "";
   await forEachEventData(response, (data) => {
-    const delta = extractDelta(parseJson(data));
+    const event = parseJson(data);
+    if (!isRecord(event)) {
+      throw new ProviderError(
+        provider,
+        "bad_response",
+        "Provider returned malformed stream data.",
+        {
+          status: response.status,
+          requestId,
+        },
+      );
+    }
+    if (event["error"] !== undefined) {
+      throw new ProviderError(provider, "server", "Provider returned a stream error.", {
+        status: response.status,
+        requestId,
+      });
+    }
+    assertCompleteResponse(event, provider, response.status, requestId);
+    const delta = extractDelta(event);
     if (delta !== undefined) {
       text += delta;
       onDelta(text);
@@ -133,28 +163,57 @@ async function readText(
   return trimmed === "" ? undefined : trimmed;
 }
 
+function assertCompleteResponse(
+  body: unknown,
+  provider: ProviderConfig["id"],
+  status: number,
+  requestId: string | undefined,
+): void {
+  const choices: readonly unknown[] =
+    isRecord(body) && Array.isArray(body["choices"]) ? body["choices"] : [];
+  const choice = choices[0];
+  const reason = isRecord(choice) ? choice["finish_reason"] : undefined;
+  if (reason !== undefined && reason !== null && reason !== "stop") {
+    throw new ProviderError(provider, "bad_response", "Provider did not finish the translation.", {
+      status,
+      requestId,
+    });
+  }
+}
+
 function isEventStream(response: Response): boolean {
   return (response.headers.get("content-type") ?? "").includes("text/event-stream");
 }
 
 async function forEachEventData(response: Response, onData: (data: string) => void) {
   let buffer = "";
+  let completed = false;
   const emitLine = (line: string) => {
     const trimmed = line.trim();
     if (!trimmed.startsWith("data:")) {
       return;
     }
     const data = trimmed.slice("data:".length).trim();
-    if (data !== "" && data !== "[DONE]") {
+    if (data === "[DONE]") {
+      completed = true;
+    } else if (data !== "") {
       onData(data);
     }
   };
   for await (const chunk of response.body?.pipeThrough(new TextDecoderStream()) ?? []) {
     const lines = (buffer + chunk).split("\n");
     buffer = lines.pop() ?? "";
-    lines.forEach(emitLine);
+    for (const line of lines) {
+      emitLine(line);
+      if (completed) {
+        return;
+      }
+    }
   }
   emitLine(buffer);
+  if (!completed) {
+    throw new Error("Translation stream ended before its completion marker.");
+  }
 }
 
 export function buildHeaders(apiKey: string | undefined): Record<string, string> {
@@ -171,7 +230,10 @@ export async function toHttpError(
   requestId: string | undefined,
 ): Promise<ProviderError> {
   const body = await response.text().catch(() => "");
-  const detail = (providerErrorMessage(body) ?? body.trim()).slice(0, MAX_ERROR_DETAIL_LENGTH);
+  const detail = redactSensitiveText(providerErrorMessage(body) ?? body.trim(), [provider]).slice(
+    0,
+    MAX_ERROR_DETAIL_LENGTH,
+  );
   return new ProviderError(
     provider.id,
     reasonForStatus(response.status),

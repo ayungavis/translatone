@@ -1,5 +1,5 @@
 import { Clipboard, openExtensionPreferences, showToast, Toast } from "@raycast/api";
-import { buildDebugReport, type DiagnosticContext } from "../core/diagnostics";
+import { buildDebugReport, redactSensitiveText, type DiagnosticContext } from "../core/diagnostics";
 import { describeError, type ErrorFix } from "../core/errors";
 
 export async function showTranslationError(
@@ -7,14 +7,15 @@ export async function showTranslationError(
   context: DiagnosticContext,
   onRetry?: () => void,
 ): Promise<void> {
-  console.error(error);
+  const report = buildDebugReport(error, context);
+  console.error(report);
   const { title, message, fix } = describeError(error);
-  const copyDebugInfo = copyDebugInfoAction(buildDebugReport(error, context));
+  const copyDebugInfo = copyDebugInfoAction(report);
   const primary = fixAction(fix, onRetry);
   await showToast({
     style: Toast.Style.Failure,
     title,
-    message,
+    message: redactSensitiveText(message, context.providers),
     primaryAction: primary ?? copyDebugInfo,
     ...(primary ? { secondaryAction: copyDebugInfo } : {}),
   });

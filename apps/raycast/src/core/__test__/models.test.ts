@@ -18,6 +18,22 @@ async function captureError(promise: Promise<unknown>): Promise<ProviderError> {
 }
 
 describe("listModels", () => {
+  test("redacts credentials from model-list network failures", async () => {
+    const provider = providerConfig("custom", {
+      baseUrl: "https://user:pass@custom.test/v1?token=secret",
+      apiKey: "example-key",
+    });
+    const error = await captureError(
+      listModels(async () => {
+        throw new Error("Rejected example-key at https://user:pass@custom.test/v1?token=secret");
+      }, provider),
+    );
+
+    expect(error.message).toBe("Could not reach https://custom.test/v1.");
+    expect(error.cause instanceof Error ? error.cause.message : error.cause).toBe(
+      "Rejected [REDACTED] at https://custom.test/v1",
+    );
+  });
   test("lists the provider's model IDs sorted, from its models endpoint", async () => {
     const { fetch, calls } = modelsFetch(async () =>
       Response.json({ data: [{ id: "gpt-5" }, { id: "gpt-5-mini" }, { id: "dall-e-3" }] }),

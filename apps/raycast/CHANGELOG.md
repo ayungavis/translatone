@@ -1,5 +1,13 @@
 # TranslaTone Changelog
 
+## [Translation Reliability] - {PR_MERGE_DATE}
+
+- Prevent pasting an earlier translation while text, tone, language, or model changes are pending
+- Refresh translations when the configured provider, model, endpoint, or API key changes
+- Reject incomplete translations and provider stream errors
+- Let providers use supported default sampling parameters
+- Redact API keys and URL credentials from error reports and logs
+
 ## [Initial Version] - {PR_MERGE_DATE}
 
 - Translate as you type in one view: pick a tone with ↑↓, see the original below the result, and press ↵ to paste or ⌘↵ to copy
