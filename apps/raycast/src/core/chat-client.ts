@@ -125,7 +125,7 @@ async function readText(
 ): Promise<string | undefined> {
   if (onDelta === undefined || !isEventStream(response)) {
     const body: unknown = await response.json().catch(() => undefined);
-    assertCompleteResponse(body, provider, response.status, requestId);
+    validateCompletion(body, provider, response.status, requestId);
     const text = extractContent(body);
     if (text !== undefined) {
       onDelta?.(text);
@@ -133,7 +133,7 @@ async function readText(
     return text;
   }
   let text = "";
-  await forEachEventData(response, (data) => {
+  const completed = await forEachEventData(response, (data) => {
     const event = parseJson(data);
     if (!isRecord(event)) {
       throw new ProviderError(
@@ -152,23 +152,35 @@ async function readText(
         requestId,
       });
     }
-    assertCompleteResponse(event, provider, response.status, requestId);
+    const stopped = validateCompletion(event, provider, response.status, requestId);
     const delta = extractDelta(event);
     if (delta !== undefined) {
       text += delta;
       onDelta(text);
     }
+    return stopped;
   });
+  if (!completed) {
+    throw new ProviderError(
+      provider,
+      "network",
+      "Translation stream ended before a completion signal.",
+      {
+        status: response.status,
+        requestId,
+      },
+    );
+  }
   const trimmed = text.trim();
   return trimmed === "" ? undefined : trimmed;
 }
 
-function assertCompleteResponse(
+function validateCompletion(
   body: unknown,
   provider: ProviderConfig["id"],
   status: number,
   requestId: string | undefined,
-): void {
+): boolean {
   const choices: readonly unknown[] =
     isRecord(body) && Array.isArray(body["choices"]) ? body["choices"] : [];
   const choice = choices[0];
@@ -179,13 +191,17 @@ function assertCompleteResponse(
       requestId,
     });
   }
+  return reason === "stop";
 }
 
 function isEventStream(response: Response): boolean {
   return (response.headers.get("content-type") ?? "").includes("text/event-stream");
 }
 
-async function forEachEventData(response: Response, onData: (data: string) => void) {
+async function forEachEventData(
+  response: Response,
+  onData: (data: string) => boolean,
+): Promise<boolean> {
   let buffer = "";
   let completed = false;
   const emitLine = (line: string) => {
@@ -197,7 +213,7 @@ async function forEachEventData(response: Response, onData: (data: string) => vo
     if (data === "[DONE]") {
       completed = true;
     } else if (data !== "") {
-      onData(data);
+      completed = onData(data);
     }
   };
   for await (const chunk of response.body?.pipeThrough(new TextDecoderStream()) ?? []) {
@@ -206,14 +222,12 @@ async function forEachEventData(response: Response, onData: (data: string) => vo
     for (const line of lines) {
       emitLine(line);
       if (completed) {
-        return;
+        return true;
       }
     }
   }
   emitLine(buffer);
-  if (!completed) {
-    throw new Error("Translation stream ended before its completion marker.");
-  }
+  return completed;
 }
 
 export function buildHeaders(apiKey: string | undefined): Record<string, string> {

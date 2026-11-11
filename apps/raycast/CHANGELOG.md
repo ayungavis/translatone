@@ -1,5 +1,10 @@
 # TranslaTone Changelog
 
+## [Custom Provider Streaming] - {PR_MERGE_DATE}
+
+- Accept a successful stream finish signal from compatible providers even when they omit the final DONE marker
+- Report streams missing a completion signal as interrupted responses, including their HTTP status and request ID
+
 ## [Provider Toggles] - {PR_MERGE_DATE}
 
 - Enable or disable Groq and Gemini in preferences without removing saved API keys or models

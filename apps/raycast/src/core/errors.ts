@@ -63,7 +63,11 @@ export class ProviderError extends Error {
   }
 
   get summary(): string {
-    return `${PROVIDERS[this.provider].name}: ${REASON_LABELS[this.reason]}`;
+    const label =
+      this.reason === "network" && this.status !== undefined
+        ? "response interrupted"
+        : REASON_LABELS[this.reason];
+    return `${PROVIDERS[this.provider].name}: ${label}`;
   }
 }
 

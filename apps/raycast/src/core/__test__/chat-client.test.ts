@@ -243,6 +243,18 @@ describe("requestCompletion", () => {
 describe("requestCompletion streaming", () => {
   const request = { provider: groq, systemPrompt: "system", text: "Halo dunia" };
 
+  test("accepts a clean stream ending with finish_reason stop without DONE", async () => {
+    const { fetch } = respondWith(async () =>
+      streamResponse({
+        chunks: [sseEvent("Hello"), 'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\n'],
+      }),
+    );
+
+    const completion = await requestCompletion(fetch, request, { onDelta: () => undefined });
+
+    expect(completion.text).toBe("Hello");
+  });
+
   test("rejects a stream that ends without a completion marker", async () => {
     const { fetch } = respondWith(async () => streamResponse({ chunks: [sseEvent("Partial")] }));
 
@@ -252,6 +264,22 @@ describe("requestCompletion streaming", () => {
 
     expect(error.reason).toBe("network");
     expect(error.recoverable).toBe(true);
+  });
+
+  test("reports a missing completion signal as an interrupted response with HTTP context", async () => {
+    const { fetch } = respondWith(
+      async () =>
+        new Response(sseEvent("Partial"), {
+          headers: { "Content-Type": "text/event-stream", "x-request-id": "stream_request" },
+        }),
+    );
+
+    const error = await captureError(
+      requestCompletion(fetch, request, { onDelta: () => undefined }),
+    );
+
+    expect(error).toMatchObject({ reason: "network", status: 200, requestId: "stream_request" });
+    expect(error.summary).toBe("Groq: response interrupted");
   });
 
   test("rejects a provider error event even after receiving text", async () => {
