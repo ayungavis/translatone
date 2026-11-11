@@ -1,5 +1,9 @@
 # TranslaTone Changelog
 
+## [Provider Toggles] - {PR_MERGE_DATE}
+
+- Enable or disable Groq and Gemini in preferences without removing saved API keys or models
+
 ## [Translation Reliability] - {PR_MERGE_DATE}
 
 - Prevent pasting an earlier translation while text, tone, language, or model changes are pending

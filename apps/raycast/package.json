@@ -136,6 +136,15 @@
       "required": false
     },
     {
+      "name": "useGroq",
+      "title": "Groq",
+      "label": "Enable Groq",
+      "description": "Use Groq for translation and fallback when an API key is configured.",
+      "type": "checkbox",
+      "required": false,
+      "default": true
+    },
+    {
       "name": "groqApiKey",
       "title": "Groq API Key",
       "description": "Free key from console.groq.com. Tried first.",
@@ -149,6 +158,15 @@
       "type": "textfield",
       "required": false,
       "default": "openai/gpt-oss-20b"
+    },
+    {
+      "name": "useGemini",
+      "title": "Gemini",
+      "label": "Enable Gemini",
+      "description": "Use Gemini for translation and fallback when an API key is configured.",
+      "type": "checkbox",
+      "required": false,
+      "default": true
     },
     {
       "name": "geminiApiKey",

@@ -50,6 +50,24 @@ describe("loadSettings", () => {
     ]);
   });
 
+  test.each([
+    ["groq", { useGroq: false }, ["gemini", "ollama"]],
+    ["gemini", { useGemini: false }, ["groq", "ollama"]],
+  ])(
+    "excludes disabled %s even when it is preferred and has a key",
+    (preferredProvider, toggles, expected) => {
+      raycast.preferences = {
+        groqApiKey: "groq-key",
+        geminiApiKey: "gemini-key",
+        useOllama: true,
+        preferredProvider,
+        ...toggles,
+      };
+
+      expect(providerOrder()).toEqual(expected);
+    },
+  );
+
   test("trims custom values and drops trailing slashes from the base URL", () => {
     raycast.preferences = {
       groqApiKey: "  groq-key  ",
@@ -73,6 +91,31 @@ describe("loadSettings", () => {
         baseUrl: "http://192.168.1.10:11434/v1",
       },
     ]);
+  });
+
+  test("restores saved keys and models when providers are enabled again", () => {
+    const saved = {
+      groqApiKey: "groq-key",
+      groqModel: "saved-groq-model",
+      geminiApiKey: "gemini-key",
+      geminiModel: "saved-gemini-model",
+    };
+    raycast.preferences = { ...saved, useGroq: false, useGemini: false };
+
+    expect(loadSettings().providers).toEqual([]);
+
+    raycast.preferences = { ...raycast.preferences, useGroq: true, useGemini: true };
+
+    expect(loadSettings().providers).toMatchObject([
+      { id: "groq", apiKey: "groq-key", model: "saved-groq-model" },
+      { id: "gemini", apiKey: "gemini-key", model: "saved-gemini-model" },
+    ]);
+  });
+
+  test("requires API keys even when Groq and Gemini are enabled", () => {
+    raycast.preferences = { useGroq: true, useGemini: true };
+
+    expect(loadSettings().providers).toEqual([]);
   });
 
   test("ignores blank API keys and blank models", () => {
@@ -216,6 +259,14 @@ describe("loadSettings", () => {
       "gemini",
       "ollama",
     ]);
+  });
+
+  test.each(["useGroq", "useGemini"])("offers an enabled-by-default %s checkbox", (name) => {
+    expect(manifest.preferences.find((preference) => preference.name === name)).toMatchObject({
+      type: "checkbox",
+      required: false,
+      default: true,
+    });
   });
 
   test("offers every supported language in both language preferences", () => {

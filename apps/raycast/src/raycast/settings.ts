@@ -16,8 +16,10 @@ interface RawPreferences {
   readonly byokApiKey?: string;
   readonly byokModel?: string;
   readonly byokBaseUrl?: string;
+  readonly useGroq?: boolean;
   readonly groqApiKey?: string;
   readonly groqModel?: string;
+  readonly useGemini?: boolean;
   readonly geminiApiKey?: string;
   readonly geminiModel?: string;
   readonly useOllama?: boolean;
@@ -58,11 +60,11 @@ function resolveProviders(preferences: RawPreferences): ProviderConfig[] {
     providers.push(own);
   }
   const groqApiKey = clean(preferences.groqApiKey);
-  if (groqApiKey) {
+  if (groqApiKey && preferences.useGroq !== false) {
     providers.push(configure("groq", groqApiKey, preferences.groqModel));
   }
   const geminiApiKey = clean(preferences.geminiApiKey);
-  if (geminiApiKey) {
+  if (geminiApiKey && preferences.useGemini !== false) {
     providers.push(configure("gemini", geminiApiKey, preferences.geminiModel));
   }
   if (preferences.useOllama) {
