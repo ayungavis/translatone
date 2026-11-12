@@ -1,5 +1,10 @@
 # TranslaTone Changelog
 
+## [Selection Command Input] - {PR_MERGE_DATE}
+
+- Read selected text directly in Translate Selection, including text that matches the clipboard
+- Keep Translate's clipboard preview local until explicitly submitted
+
 ## [Private Clipboard Preview and Setup] - {PR_MERGE_DATE}
 
 - Preview clipboard text locally and choose Translate Clipboard before sending it to a provider

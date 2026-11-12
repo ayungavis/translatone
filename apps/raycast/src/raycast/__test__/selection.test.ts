@@ -17,25 +17,29 @@ describe("translateSelectionInPlace", () => {
     consoleError.mockImplementation(() => undefined);
   });
 
-  test("replaces the selection with the translation and confirms", async () => {
-    raycast.selectedText = "Halo dunia";
-    const { fetch, calls } = groqAnswering("⟦id→en⟧\nHello world");
+  test.each(["Different clipboard text", "Halo dunia", "  Halo dunia  "])(
+    "replaces selected text when the clipboard contains %s",
+    async (clipboard) => {
+      raycast.selectedText = "Halo dunia";
+      raycast.clipboard.push(clipboard);
+      const { fetch, calls } = groqAnswering("⟦id→en⟧\nHello world");
 
-    await translateSelectionInPlace(fetch);
+      await translateSelectionInPlace(fetch);
 
-    expect(calls).toHaveLength(1);
-    expect(raycast.toasts[0]).toMatchObject({
-      style: "ANIMATED",
-      title: "Translating…",
-      message: "Default · Auto · English ↔ Indonesian",
-    });
-    expect(raycast.events).toEqual([
-      "toast:Translating…",
-      "closeMainWindow",
-      "paste:Hello world",
-      "hud:Replaced selection · via Groq",
-    ]);
-  });
+      expect(calls).toHaveLength(1);
+      expect(raycast.toasts[0]).toMatchObject({
+        style: "ANIMATED",
+        title: "Translating…",
+        message: "Default · Auto · English ↔ Indonesian",
+      });
+      expect(raycast.events).toEqual([
+        "toast:Translating…",
+        "closeMainWindow",
+        "paste:Hello world",
+        "hud:Replaced selection · via Groq",
+      ]);
+    },
+  );
 
   test("offers preferences for invalid settings without sending or pasting text", async () => {
     raycast.selectedText = "Halo dunia";
@@ -90,11 +94,11 @@ describe("translateSelectionInPlace", () => {
   });
 
   test.each([
-    ["nothing is selected", () => undefined],
+    ["the selection is unreadable", () => undefined],
     [
-      "the selection only echoes the clipboard",
+      "the selection is blank",
       () => {
-        raycast.selectedText = "Copied";
+        raycast.selectedText = "  \n ";
         raycast.clipboard.push("Copied");
       },
     ],
