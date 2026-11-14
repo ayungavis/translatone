@@ -1,5 +1,13 @@
 # TranslaTone Changelog
 
+## [Manage Providers] - {PR_MERGE_DATE}
+
+- Add, edit, test, enable, disable and remove connections through Manage Providers
+- Choose a primary provider and explicitly opt into automatic fallback
+- Store managed credentials in Raycast's encrypted local storage; empty required keys disable the provider
+- Simplify general preferences to language, tone and Enter-key behavior
+- Existing beta users must re-enter provider details once in Manage Providers
+
 ## [Selection Command Input] - {PR_MERGE_DATE}
 
 - Read selected text directly in Translate Selection, including text that matches the clipboard

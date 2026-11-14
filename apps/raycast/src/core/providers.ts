@@ -2,8 +2,6 @@ export const BYOK_PROVIDER_IDS = ["openai", "anthropic", "openrouter", "custom"]
 
 export const PROVIDER_IDS = ["groq", "gemini", "ollama", ...BYOK_PROVIDER_IDS] as const;
 
-export type ByokProviderId = (typeof BYOK_PROVIDER_IDS)[number];
-
 export type ProviderId = (typeof PROVIDER_IDS)[number];
 
 export type UsagePeriod = "day" | "month";
@@ -96,10 +94,6 @@ function keyPageTitle(name: string, free: boolean): string {
     return `Get a Free ${name} Key`;
   }
   return `Get ${/^[AEIOU]/.test(name) ? "an" : "a"} ${name} Key`;
-}
-
-export function isByokProviderId(value: string | undefined): value is ByokProviderId {
-  return BYOK_PROVIDER_IDS.some((id) => id === value);
 }
 
 export interface ProviderConfig {

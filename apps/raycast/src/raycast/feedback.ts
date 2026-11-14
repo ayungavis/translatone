@@ -1,4 +1,4 @@
-import { Clipboard, openExtensionPreferences, showToast, Toast } from "@raycast/api";
+import { Clipboard, launchCommand, LaunchType, showToast, Toast } from "@raycast/api";
 import { buildDebugReport, redactSensitiveText, type DiagnosticContext } from "../core/diagnostics";
 import { describeError, type ErrorFix } from "../core/errors";
 
@@ -27,9 +27,9 @@ function fixAction(
 ): Toast.ActionOptions | undefined {
   if (fix === "open_preferences") {
     return {
-      title: "Open Preferences",
+      title: "Manage Providers",
       onAction: () => {
-        void openExtensionPreferences();
+        void launchCommand({ name: "manage-providers", type: LaunchType.UserInitiated });
       },
     };
   }

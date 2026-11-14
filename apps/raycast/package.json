@@ -52,162 +52,19 @@
       "subtitle": "TranslaTone",
       "description": "Pick a model from your provider's model list. Overrides the model set in preferences.",
       "mode": "view"
+    },
+    {
+      "name": "manage-providers",
+      "title": "Manage Providers",
+      "subtitle": "TranslaTone",
+      "description": "Add, edit, test, enable or remove translation providers and choose your primary provider.",
+      "mode": "view"
     }
   ],
   "platforms": [
     "macOS"
   ],
   "preferences": [
-    {
-      "name": "preferredProvider",
-      "title": "Preferred Provider",
-      "description": "Tried first for every translation. If it is unavailable (rate limit, used-up quota, outage, timeout, or unknown model), TranslaTone falls back to your other configured providers in order. An invalid API key is shown as an error instead.",
-      "type": "dropdown",
-      "required": false,
-      "default": "own",
-      "data": [
-        {
-          "title": "Your Own Provider",
-          "value": "own"
-        },
-        {
-          "title": "Groq",
-          "value": "groq"
-        },
-        {
-          "title": "Gemini",
-          "value": "gemini"
-        },
-        {
-          "title": "Ollama",
-          "value": "ollama"
-        }
-      ]
-    },
-    {
-      "name": "byokProvider",
-      "title": "Your Own Provider",
-      "description": "Bring your own API key for OpenAI, Anthropic, OpenRouter, or any OpenAI-compatible endpoint.",
-      "type": "dropdown",
-      "required": false,
-      "default": "none",
-      "data": [
-        {
-          "title": "None",
-          "value": "none"
-        },
-        {
-          "title": "OpenAI",
-          "value": "openai"
-        },
-        {
-          "title": "Anthropic",
-          "value": "anthropic"
-        },
-        {
-          "title": "OpenRouter",
-          "value": "openrouter"
-        },
-        {
-          "title": "Custom (OpenAI-compatible)",
-          "value": "custom"
-        }
-      ]
-    },
-    {
-      "name": "byokApiKey",
-      "title": "Your API Key",
-      "description": "API key for your own provider. Optional for a custom endpoint.",
-      "type": "password",
-      "required": false
-    },
-    {
-      "name": "byokModel",
-      "title": "Your Model",
-      "description": "Model ID for your own provider. Required for Custom; leave empty for a built-in provider's default.",
-      "type": "textfield",
-      "required": false
-    },
-    {
-      "name": "byokBaseUrl",
-      "title": "Custom Base URL",
-      "description": "API base URL for Custom, such as http://localhost:1234/v1. Remote endpoints require HTTPS. Do not include /chat/completions, credentials, a query, or a fragment.",
-      "type": "textfield",
-      "required": false
-    },
-    {
-      "name": "useGroq",
-      "title": "Groq",
-      "label": "Enable Groq",
-      "description": "Use Groq for translation and fallback when an API key is configured.",
-      "type": "checkbox",
-      "required": false,
-      "default": true
-    },
-    {
-      "name": "groqApiKey",
-      "title": "Groq API Key",
-      "description": "Free key from console.groq.com. Tried first.",
-      "type": "password",
-      "required": false
-    },
-    {
-      "name": "groqModel",
-      "title": "Groq Model",
-      "description": "Model used for Groq requests.",
-      "type": "textfield",
-      "required": false,
-      "default": "openai/gpt-oss-20b"
-    },
-    {
-      "name": "useGemini",
-      "title": "Gemini",
-      "label": "Enable Gemini",
-      "description": "Use Gemini for translation and fallback when an API key is configured.",
-      "type": "checkbox",
-      "required": false,
-      "default": true
-    },
-    {
-      "name": "geminiApiKey",
-      "title": "Gemini API Key",
-      "description": "Free key from aistudio.google.com. Used when Groq is unavailable.",
-      "type": "password",
-      "required": false
-    },
-    {
-      "name": "geminiModel",
-      "title": "Gemini Model",
-      "description": "Model used for Gemini requests.",
-      "type": "textfield",
-      "required": false,
-      "default": "gemini-2.5-flash"
-    },
-    {
-      "name": "useOllama",
-      "title": "Local Fallback",
-      "label": "Use Ollama when cloud providers are unavailable",
-      "description": "Requires Ollama running locally.",
-      "type": "checkbox",
-      "required": false,
-      "default": false
-    },
-    {
-      "name": "ollamaModel",
-      "title": "Ollama Model",
-      "description": "Model used for Ollama requests.",
-      "type": "textfield",
-      "required": false,
-      "default": "llama3.1"
-    },
-    {
-      "name": "ollamaBaseUrl",
-      "title": "Ollama URL",
-      "description": "OpenAI-compatible Ollama endpoint.",
-      "type": "textfield",
-      "required": false,
-      "default": "http://localhost:11434/v1"
-    },
     {
       "name": "mainLanguage",
       "title": "Main Language",

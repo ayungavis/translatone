@@ -1,6 +1,7 @@
 import { Action, ActionPanel, Icon, Keyboard, List, openExtensionPreferences } from "@raycast/api";
 import { useCachedState, usePromise } from "@raycast/utils";
 import { useEffect, useMemo, useState } from "react";
+import { ManageProviders } from "./manage-providers";
 import { ChooseModel } from "./choose-model";
 import {
   currentTranslation,
@@ -55,23 +56,27 @@ const OUTPUT_ICONS: Readonly<Record<PrimaryAction, Icon>> = {
 const NO_PROVIDERS: readonly ProviderConfig[] = [];
 
 export default function TranslateCommand() {
-  let settings: Settings | InvalidSettingsError;
-  try {
-    settings = loadSettings();
-  } catch (error) {
+  const { data: settings, error, revalidate } = usePromise(loadSettings, []);
+  if (error) {
     if (!(error instanceof InvalidSettingsError)) {
       throw error;
     }
-    settings = error;
+    return <SettingsErrorView error={error} />;
   }
-  return settings instanceof InvalidSettingsError ? (
-    <SettingsErrorView error={settings} />
+  return settings ? (
+    <Translate settings={settings} onSettingsChange={() => void revalidate()} />
   ) : (
-    <Translate settings={settings} />
+    <List isLoading />
   );
 }
 
-function Translate({ settings }: { readonly settings: Settings }) {
+function Translate({
+  settings,
+  onSettingsChange,
+}: {
+  readonly settings: Settings;
+  readonly onSettingsChange: () => void;
+}) {
   const [text, setText] = useState("");
   const [query, setQuery] = useState("");
   const [submittedClipboard, setSubmittedClipboard] = useState<string | undefined>(undefined);
@@ -100,7 +105,7 @@ function Translate({ settings }: { readonly settings: Settings }) {
     () => resolveTarget(selectedTarget, settings.target),
     [selectedTarget, settings.target],
   );
-  const { data: providers, revalidate: reloadModels } = usePromise(
+  const { data: providers } = usePromise(
     (configured: readonly ProviderConfig[]) => applyModelChoices(localStore, configured),
     [settings.providers],
   );
@@ -196,7 +201,12 @@ function Translate({ settings }: { readonly settings: Settings }) {
           title="Choose Model…"
           icon={Icon.ComputerChip}
           shortcut={{ modifiers: ["cmd"], key: "m" }}
-          target={<ChooseModel onChange={() => void reloadModels()} />}
+          target={<ChooseModel onChange={onSettingsChange} />}
+        />
+        <Action.Push
+          title="Manage Providers"
+          icon={Icon.Key}
+          target={<ManageProviders onChange={onSettingsChange} />}
         />
         <Action
           title="Open Preferences"
@@ -209,10 +219,10 @@ function Translate({ settings }: { readonly settings: Settings }) {
 
   const setupActions = (
     <ActionPanel>
-      <Action
-        title="Open Preferences"
-        icon={Icon.Gear}
-        onAction={() => void openExtensionPreferences()}
+      <Action.Push
+        title="Manage Providers"
+        icon={Icon.Key}
+        target={<ManageProviders onChange={onSettingsChange} />}
       />
       {keyPageLinks().map(({ title, url }) => (
         <Action.OpenInBrowser key={url} title={title} url={url} />

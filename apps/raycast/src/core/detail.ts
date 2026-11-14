@@ -24,7 +24,7 @@ const SETUP_VIEW: EmptyViewContent = {
   needsSetup: true,
   title: "Add a provider to start",
   description:
-    "TranslaTone needs your own OpenAI, Anthropic, OpenRouter, or custom key, a free Groq or Gemini key, or Ollama running on this Mac. Press ↵ to open preferences.",
+    "Open Manage Providers to add your first provider or choose an enabled primary provider. Press ↵ to manage providers.",
 };
 
 export function formatDetailMarkdown({

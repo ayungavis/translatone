@@ -63,7 +63,7 @@ describe("describeError", () => {
       "a missing provider",
       new NoProviderConfiguredError(),
       "No provider configured",
-      "Add your own provider's API key, a free Groq or Gemini key, or enable Ollama, in the extension preferences.",
+      "Open Manage Providers to add a provider and choose an enabled primary provider.",
     ],
     ["empty text", new EmptyTextError(), "Nothing to translate", "There is no text to translate."],
     [

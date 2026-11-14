@@ -33,19 +33,19 @@ describe("showTranslationError", () => {
     consoleError.mockReset();
   });
 
-  test("offers to open preferences when no provider is configured", async () => {
+  test("opens Manage Providers when no provider is configured", async () => {
     await showTranslationError(new NoProviderConfiguredError(), context);
 
     expect(raycast.toasts[0]).toMatchObject({
       style: "FAILURE",
       title: "No provider configured",
-      primaryAction: { title: "Open Preferences" },
+      primaryAction: { title: "Manage Providers" },
       secondaryAction: { title: "Copy Debug Info" },
     });
 
     trigger(raycast.toasts[0]?.primaryAction);
 
-    expect(raycast.openExtensionPreferences).toHaveBeenCalledTimes(1);
+    expect(raycast.events).toContain("launch:manage-providers:userInitiated");
   });
 
   test("points to preferences for an invalid key and keeps the debug report", async () => {
@@ -58,7 +58,7 @@ describe("showTranslationError", () => {
       style: "FAILURE",
       title: "Translation failed",
       message: "Groq: invalid API key",
-      primaryAction: { title: "Open Preferences" },
+      primaryAction: { title: "Manage Providers" },
       secondaryAction: { title: "Copy Debug Info" },
     });
 

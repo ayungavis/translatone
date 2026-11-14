@@ -1,18 +1,11 @@
-import {
-  Action,
-  ActionPanel,
-  Icon,
-  List,
-  openExtensionPreferences,
-  showToast,
-  Toast,
-} from "@raycast/api";
+import { Action, ActionPanel, Icon, List, showToast, Toast } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
+import { ManageProviders } from "./manage-providers";
+import { enabledProviders, loadProviderSettings } from "./core/provider-settings";
 import { useState } from "react";
 import { describeError, InvalidSettingsError } from "./core/errors";
 import { applyModelChoices, clearModelChoice, listModels, saveModelChoice } from "./core/models";
 import { PROVIDERS, type ProviderConfig, type ProviderId } from "./core/providers";
-import { loadSettings, type Settings } from "./raycast/settings";
 import { SettingsErrorView } from "./raycast/settings-error";
 import { localStore } from "./raycast/storage";
 
@@ -25,28 +18,38 @@ interface ChooseModelProps {
 }
 
 export function ChooseModel({ onChange }: ChooseModelProps) {
-  let settings: Settings | InvalidSettingsError;
-  try {
-    settings = loadSettings();
-  } catch (error) {
+  const {
+    data: settings,
+    error,
+    revalidate,
+  } = usePromise(() => loadProviderSettings(localStore), []);
+  if (error) {
     if (!(error instanceof InvalidSettingsError)) {
       throw error;
     }
-    settings = error;
+    return <SettingsErrorView error={error} />;
   }
-  return settings instanceof InvalidSettingsError ? (
-    <SettingsErrorView error={settings} />
+  return settings ? (
+    <ModelList
+      providers={enabledProviders(settings)}
+      onChange={onChange}
+      reloadSettings={() => void revalidate()}
+    />
   ) : (
-    <ModelList settings={settings} onChange={onChange} />
+    <List isLoading />
   );
 }
 
 function ModelList({
-  settings: { providers },
+  providers,
   onChange,
-}: ChooseModelProps & { readonly settings: Settings }) {
+  reloadSettings,
+}: ChooseModelProps & {
+  readonly providers: readonly ProviderConfig[];
+  readonly reloadSettings: () => void;
+}) {
   const [providerId, setProviderId] = useState<string>(providers[0]?.id ?? "");
-  const provider = providers.find(({ id }) => id === providerId);
+  const provider = providers.find(({ id }) => id === providerId) ?? providers[0];
   const { data: active, revalidate } = usePromise(
     (configured: readonly ProviderConfig[]) => applyModelChoices(localStore, configured),
     [providers],
@@ -56,7 +59,7 @@ function ModelList({
       selected ? listModels(fetch, selected) : Promise.resolve([]),
     [provider],
   );
-  const activeModel = active?.find(({ id }) => id === providerId)?.model;
+  const activeModel = active?.find(({ id }) => id === provider?.id)?.model;
 
   const changeModel = async (id: ProviderId, change: () => Promise<void>, message: string) => {
     await change();
@@ -68,7 +71,7 @@ function ModelList({
   const commonActions = provider ? (
     <ActionPanel.Section>
       <Action
-        title="Use Preference Model"
+        title="Use Saved Model"
         icon={Icon.ArrowCounterClockwise}
         onAction={() =>
           void changeModel(
@@ -78,17 +81,31 @@ function ModelList({
           )
         }
       />
-      <Action
-        title="Open Preferences"
-        icon={Icon.Gear}
-        onAction={() => void openExtensionPreferences()}
+      <Action.Push
+        title="Manage Providers"
+        icon={Icon.Key}
+        target={
+          <ManageProviders
+            onChange={() => {
+              reloadSettings();
+              onChange?.();
+            }}
+          />
+        }
       />
     </ActionPanel.Section>
   ) : (
-    <Action
-      title="Open Preferences"
-      icon={Icon.Gear}
-      onAction={() => void openExtensionPreferences()}
+    <Action.Push
+      title="Manage Providers"
+      icon={Icon.Key}
+      target={
+        <ManageProviders
+          onChange={() => {
+            reloadSettings();
+            onChange?.();
+          }}
+        />
+      }
     />
   );
 
@@ -97,7 +114,7 @@ function ModelList({
       isLoading={models.isLoading}
       searchBarPlaceholder="Search models"
       searchBarAccessory={
-        <List.Dropdown tooltip="Provider" value={providerId} onChange={setProviderId}>
+        <List.Dropdown tooltip="Provider" value={provider?.id ?? ""} onChange={setProviderId}>
           {providers.map(({ id }) => (
             <List.Dropdown.Item key={id} value={id} title={PROVIDERS[id].name} />
           ))}
@@ -108,7 +125,7 @@ function ModelList({
         <List.EmptyView
           icon={Icon.Key}
           title="No provider configured"
-          description="Add an API key in the extension preferences first."
+          description="Add and enable a provider in Manage Providers first."
           actions={<ActionPanel>{commonActions}</ActionPanel>}
         />
       ) : models.error ? (

@@ -23,7 +23,7 @@ export async function translateSelectionInPlace(fetchFn: Fetch = fetch): Promise
 
   let settings: Settings;
   try {
-    settings = loadSettings();
+    settings = await loadSettings();
   } catch (error) {
     if (!(error instanceof InvalidSettingsError)) {
       throw error;

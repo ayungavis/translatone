@@ -85,9 +85,7 @@ export class NoProviderConfiguredError extends Error {
   override readonly name = "NoProviderConfiguredError";
 
   constructor() {
-    super(
-      "Add your own provider's API key, a free Groq or Gemini key, or enable Ollama, in the extension preferences.",
-    );
+    super("Open Manage Providers to add a provider and choose an enabled primary provider.");
   }
 }
 

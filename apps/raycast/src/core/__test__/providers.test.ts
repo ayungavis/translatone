@@ -1,44 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import manifest from "../../../package.json";
-import { BYOK_PROVIDER_IDS, keyPageLinks, PROVIDERS, providersAfter } from "../providers";
+import { keyPageLinks, providersAfter } from "../providers";
 import { providerConfig } from "./test-helpers";
-
-function preferenceDefault(name: string): unknown {
-  return manifest.preferences.find((preference) => preference.name === name)?.default;
-}
-
-describe("provider defaults", () => {
-  test("use Groq's supported replacement for the retired Llama 3.1 8B model", () => {
-    expect(PROVIDERS.groq.defaultModel).toBe("openai/gpt-oss-20b");
-  });
-
-  test.each([
-    ["groqModel", PROVIDERS.groq.defaultModel],
-    ["geminiModel", PROVIDERS.gemini.defaultModel],
-    ["ollamaModel", PROVIDERS.ollama.defaultModel],
-    ["ollamaBaseUrl", PROVIDERS.ollama.defaultBaseUrl],
-  ])("the %s preference default matches the provider default", (name, expected) => {
-    expect(preferenceDefault(name)).toBe(expected);
-  });
-});
-
-describe("your own provider preference", () => {
-  const preference = manifest.preferences.find(({ name }) => name === "byokProvider");
-
-  test("offers none plus every bring-your-own-key provider", () => {
-    expect(preference?.data?.map(({ value }) => value)).toEqual(["none", ...BYOK_PROVIDER_IDS]);
-  });
-
-  test("defaults to none", () => {
-    expect(preference?.default).toBe("none");
-  });
-
-  test("names each provider like the provider list", () => {
-    expect(preference?.data?.slice(1).map(({ title }) => title)).toEqual(
-      BYOK_PROVIDER_IDS.map((id) => PROVIDERS[id].name),
-    );
-  });
-});
 
 describe("keyPageLinks", () => {
   test("links the free key pages first, then the paid providers", () => {

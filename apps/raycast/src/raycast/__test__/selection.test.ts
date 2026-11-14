@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Fetch } from "../../core/chat-client";
 import { completionResponse, rejectionOf, scriptedFetch } from "../../core/__test__/test-helpers";
+import { createProvider, saveProvider } from "../../core/provider-settings";
+import { localStore } from "../storage";
 import { translateSelectionInPlace } from "../selection";
 import { raycast } from "./test-helpers";
 
@@ -11,9 +13,12 @@ function groqAnswering(content: string) {
 describe("translateSelectionInPlace", () => {
   const consoleError = spyOn(console, "error");
 
-  beforeEach(() => {
+  beforeEach(async () => {
     raycast.reset();
-    raycast.preferences = { groqApiKey: "groq-key" };
+    await saveProvider(
+      localStore,
+      createProvider({ id: "groq", apiKey: "groq-key", model: "", baseUrl: "", enabled: true }),
+    );
     consoleError.mockImplementation(() => undefined);
   });
 
@@ -43,7 +48,7 @@ describe("translateSelectionInPlace", () => {
 
   test("offers preferences for invalid settings without sending or pasting text", async () => {
     raycast.selectedText = "Halo dunia";
-    raycast.preferences = { byokProvider: "custom", byokModel: "model" };
+    raycast.storage.set("providers:v1", "invalid");
     const { fetch, calls } = groqAnswering("unused");
 
     await translateSelectionInPlace(fetch);
@@ -52,14 +57,14 @@ describe("translateSelectionInPlace", () => {
     expect(raycast.events).not.toContain("paste:unused");
     expect(raycast.toasts[0]).toMatchObject({
       title: "Check provider settings",
-      primaryAction: { title: "Open Preferences" },
+      primaryAction: { title: "Manage Providers" },
     });
   });
 
   test("surfaces unexpected settings failures instead of hiding them", async () => {
     raycast.selectedText = "Halo dunia";
     raycast.preferences = {
-      get groqApiKey() {
+      get defaultTone() {
         throw new Error("Preferences unavailable");
       },
     };
@@ -133,7 +138,7 @@ describe("translateSelectionInPlace", () => {
 
   test("reports a failure without touching the selection", async () => {
     raycast.selectedText = "Halo dunia";
-    raycast.preferences = {};
+    raycast.storage.clear();
     const { fetch } = groqAnswering("unused");
 
     await translateSelectionInPlace(fetch);
