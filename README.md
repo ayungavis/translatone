@@ -27,7 +27,7 @@ bun run dev
 
 The self-contained Raycast extension lives in `apps/raycast`; its provider-independent logic is in `apps/raycast/src/core`.
 
-Before submitting changes, run `bun run check` at the root, then `bun run build` and `bun run lint` in `apps/raycast`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution guide.
+Before submitting changes, run `bun run build` in `apps/raycast` to generate Raycast preference types, then `bun run check` at the root and `bun run lint` in `apps/raycast`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution guide.
 
 ## Releasing
 

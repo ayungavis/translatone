@@ -18,14 +18,18 @@ Thanks for helping improve TranslaTone.
 
 ## Before opening a pull request
 
+First build inside `apps/raycast` to generate the preference types required by TypeScript:
+
 ```bash
+cd apps/raycast
+bun run build
+cd ../..
 bun run check
 ```
 
-Then, inside `apps/raycast`, run the same checks the Raycast Store uses:
+Then run the remaining Raycast Store check inside `apps/raycast`:
 
 ```bash
-bun run build
 bun run lint
 ```
 
